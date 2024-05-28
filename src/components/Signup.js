@@ -1,12 +1,13 @@
-import React, {Component} from 'react';
-import { Container, Typography, TextField, Button, Box } from '@mui/material';
+import { Box, Button, Container, TextField, Typography } from '@mui/material';
+import React, { Component } from 'react';
 
-class Login extends Component {
+class Signup extends Component {
     constructor(props) {
-        super(props)
+        super(props);
         this.state = {
             u_id: '',
-            password: ''
+            password: '',
+            password_check: '',
         };
     }
 
@@ -17,13 +18,12 @@ class Login extends Component {
 
     handleSubmit = (event) => {
         event.preventDefault();
-        const {u_id, password} = this.state;
-        // 로그인 기능은 추후에 추가
-        console.log('로그인 시도', u_id, password)
+        // 나중에 회원가입시 할 코드 작성
+        console.log("회원가입 시도")
     }
 
     render() {
-        const {u_id, password} = this.state;
+        const {u_id, password, password_check} = this.state;
 
         return (
             <Box
@@ -37,16 +37,17 @@ class Login extends Component {
                 }}
             >
                 <Container maxWidth="sm">
-                    <Typography 
-                        variant="h4"
+                    <Typography
+                        variant='h4'
                         gutterBottom
                         sx={{
                             color: '#90caf9',
                             textAlign: 'center',
                             fontWeight: 'bold',
+                            marginBottom: 2
                         }}
                     >
-                        로그인
+                        회원가입
                     </Typography>
                     <form onSubmit={this.handleSubmit}>
                         <TextField
@@ -55,7 +56,7 @@ class Login extends Component {
                             required
                             fullWidth
                             id="u_id"
-                            label="사용자 이름"
+                            label="아이디"
                             name="u_id"
                             autoFocus
                             value={u_id}
@@ -73,6 +74,18 @@ class Login extends Component {
                             value={password}
                             onChange={this.handleChange}
                         />
+                        <TextField
+                            variant='outlined'
+                            margin="normal"
+                            required
+                            fullWidth
+                            id="password_check"
+                            label="비밀번호 확인"
+                            name="password_check"
+                            type="password"
+                            value={password_check}
+                            onChange={this.handleChange}
+                        />
                         <Button
                             type="submit"
                             fullWidth
@@ -80,7 +93,7 @@ class Login extends Component {
                             color="primary"
                             sx={{mt: 2}}
                         >
-                            로그인
+                            회원가입
                         </Button>
                     </form>
                 </Container>
@@ -89,4 +102,4 @@ class Login extends Component {
     }
 }
 
-export default Login;
+export default Signup;
