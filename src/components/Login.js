@@ -28,11 +28,12 @@ class Login extends Component {
         return (
             <Box
                 sx={{
-                    height: '100vh',
+                    height: '90vh',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
+                    overflow: 'hidden'
                 }}
             >
                 <Container maxWidth="sm">
