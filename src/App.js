@@ -7,6 +7,7 @@ import { Provider } from "react-redux";
 import store from "./redux/store";
 import Menubar from "./components/Menubar";
 import { createTheme, CssBaseline, ThemeProvider } from "@mui/material";
+import WriteArticle from "./pages/WriteArticle";
 
 const darkTheme = createTheme({
   palette: {
@@ -31,6 +32,7 @@ function App() {
             <Route path="/" element={<Main />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/write" element={<WriteArticle />} />
           </Routes>
         </Router>
       </ThemeProvider>
