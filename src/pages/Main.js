@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Pagination, Box, Container, Button, List, Card, CardContent, ListItem, ListItemText, Typography, Avatar } from '@mui/material';
+import { TextField, Pagination, Box, Container, Button, List, Card, CardContent, ListItem, ListItemText, Typography, Avatar } from '@mui/material';
 import {useSelector} from 'react-redux';
 import ky from 'ky';
 
@@ -8,16 +8,17 @@ const Main = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [posts, setPosts] = useState([]);
     const [totalPages, setTotalPages] = useState(1);
+    const [searchQuery, setSearchQuery] = useState('');
     const navigate = useNavigate();
     const userId = useSelector(state => state.user.userId);
 
-    const fetchPosts = async (page) => {
+    const fetchPosts = async (page, query='') => {
         try {
-            const response = await ky.get(`http://localhost:8080/api/articles?page=${page - 1}`).json();
-            setPosts(response.content);
-            setTotalPages(response.totalPages);
+            const response = await ky.get(`http://localhost:8080/api/articles?page=${page - 1}&search=${query}`).json();
+            setPosts(response.content || []);
+            setTotalPages(response.totalPages || 1);
         } catch (error) {
-            console.error("게시글을 불러오는데 오류가 발생함");
+            console.error("오류 발생!");
         }
     }
 
@@ -36,6 +37,10 @@ const Main = () => {
         navigate('/write');
     }
 
+    const handleSearch = () => {
+        fetchPosts(1, searchQuery);
+    }
+
     useEffect(() => {
         fetchPosts(currentPage);
     }, [currentPage]);
@@ -44,7 +49,8 @@ const Main = () => {
         <Container maxWidth="md" style={{ marginTop: '20px', display: 'flex' }}>
             {/* Main Content */}
             <Box style={{ flex: 1, marginRight: '300px' }}>
-                <List>
+                {posts.length !== 0 && (
+                    <List>
                     {posts.map(post => (
                         <Card key={post.articleNum} variant='outlined' style={{ marginBottom: '10px', width: '130%' }}>
                             <CardContent>
@@ -80,15 +86,16 @@ const Main = () => {
                         </Card>
                     ))}
                 </List>
+                )}
             </Box>
 
             {/* Right Sidebar */}
             <Box 
                 style={{ 
                     position: 'fixed', 
-                    right: '20%', 
+                    right: '10%', 
                     top: '50%', 
-                    width: '250px', 
+                    width: '20%', 
                     zIndex: 1000, 
                     padding: '10px', 
                     boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)',
@@ -97,6 +104,30 @@ const Main = () => {
                     alignItems: 'center',
                 }}
             >
+                <Box
+                    display="flex" 
+                    alignItems="center" 
+                    justifyContent="space-between" 
+                    style={{ marginBottom: '20px', width: '100%' }}
+                >
+                    <TextField
+                        label="Search"
+                        variant="outlined"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        fullWidth
+                        style={{ marginBottom: '10px' }}
+                    />
+                    <Button 
+                        variant="contained" 
+                        color="primary" 
+                        onClick={handleSearch} 
+                        style={{ marginBottom: '20px', marginLeft: '20px' }}
+                    >
+                        검색
+                    </Button>
+                </Box>
+
                 <Button variant='contained' color='primary' onClick={handleWrite} style={{ marginBottom: '20px' }}>
                     새 글 작성
                 </Button>
