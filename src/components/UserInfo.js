@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { TextField, Button, Box, Typography, Avatar } from '@mui/material';
 import ky from 'ky';
 import { useStore } from '../redux/store/store';
+import { useNavigate } from 'react-router-dom';
+import { validatePassword } from '../util/validator';
 const UserInfo = () => {
     // 상태 관리: 비밀번호, 프로필 이미지
     const [password, setPassword] = useState('');
@@ -10,7 +12,7 @@ const UserInfo = () => {
     const {userId, setUserId} = useStore();
     const {userImagePath, setUserImagePath} = useStore();
 
-    console.log(userImagePath);
+    const navigator = useNavigate();
 
     // 프로필 이미지 변경 핸들러
     const handleProfileImageChange = async (e) => {
@@ -39,11 +41,35 @@ const UserInfo = () => {
     };
 
     // 폼 제출 핸들러
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // 여기서 서버로 변경된 비밀번호와 프로필 이미지를 전송하는 로직 추가
-        console.log('Password:', password);
-        console.log('Profile Image:', profileImage);
+
+        if(!validatePassword(password)) {
+            alert("비밀번호는 4글자 이상 16글자 이하로 설정해주세요.")
+            return;
+        }
+
+        const data = {
+            userId : userId, 
+            password: password
+        }
+
+        try {
+            const response = await ky.post('http://localhost:8080/api/users/password', {
+                json: data,  // 요청 본문
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            if(response.ok) {
+                alert("비밀번호가 변경되었습니다.");
+                navigator('/');
+            } else {
+                alert("오류가 발생했습니다.")
+            }
+        } catch(error) {
+            console.error(error);
+        }
     };
 
     return (
