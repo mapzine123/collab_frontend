@@ -1,13 +1,13 @@
 import "./App.css";
 import Main from "./pages/Main";
 import Login from "./pages/Login";
-import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import Signup from "./pages/Signup";
-import { Provider } from "react-redux";
-import store from "./redux/store";
 import Menubar from "./components/Menubar";
 import { createTheme, CssBaseline, ThemeProvider } from "@mui/material";
 import WriteArticle from "./pages/WriteArticle";
+import MyPage from "./pages/MyPage";
+import { usePersistedStore } from "./redux/store/store";
 
 const darkTheme = createTheme({
   palette: {
@@ -22,21 +22,22 @@ const darkTheme = createTheme({
 });
 
 function App() {
+  usePersistedStore();
+
   return (
-    <Provider store={store}>
-      <ThemeProvider theme={darkTheme}>
-        <CssBaseline />
-        <Router>
-          <Menubar />
-          <Routes>
-            <Route path="/" element={<Main />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/write" element={<WriteArticle />} />
-          </Routes>
-        </Router>
-      </ThemeProvider>
-    </Provider>
+    <ThemeProvider theme={darkTheme}>
+      <CssBaseline />
+      <Router>
+        <Menubar />
+        <Routes>
+          <Route path="/" element={<Main />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/write" element={<WriteArticle />} />
+          <Route path="/myPage" element={<MyPage />} />
+        </Routes>
+      </Router>
+    </ThemeProvider>
   );
 }
 

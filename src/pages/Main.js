@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TextField, Pagination, Box, Container, Button, List, Card, CardContent, ListItem, ListItemText, Typography, Avatar } from '@mui/material';
-import {useSelector} from 'react-redux';
 import ky from 'ky';
+import { useStore } from '../redux/store/store';
 
 const Main = () => {
     const [currentPage, setCurrentPage] = useState(1);
@@ -10,7 +10,8 @@ const Main = () => {
     const [totalPages, setTotalPages] = useState(1);
     const [searchQuery, setSearchQuery] = useState('');
     const navigate = useNavigate();
-    const userId = useSelector(state => state.user.userId);
+
+    const {userId, setUserId} = useStore();
 
     const fetchPosts = async (page, query='') => {
         try {

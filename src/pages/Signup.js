@@ -2,6 +2,7 @@ import { Box, Button, Container, TextField, Typography } from '@mui/material';
 import React, { Component } from 'react';
 
 import axios from 'axios'
+import { validatePassword } from '../util/validator';
 
 class Signup extends Component {
     constructor(props) {
@@ -34,7 +35,7 @@ class Signup extends Component {
 
         }
 
-        if(password.length < 4 || password.length > 16) {
+        if(validatePassword(password)) {
             this.setState({passwordErrorMessage: "비밀번호는 4글자 이상 16글자 이하로 설정해주세요."})
             return;
         } else {

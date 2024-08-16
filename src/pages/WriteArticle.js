@@ -3,12 +3,13 @@ import { TextField, Button, Container, Typography, Box } from "@mui/material";
 import {useSelector} from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import ky from 'ky';
+import { useStore } from "../redux/store/store";
 
 const WriteArticle = () => {
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
 
-    const userId = useSelector(state => state.user.userId);
+    const {userId, setUserId} = useStore();
     const navigator = useNavigate();
 
     useEffect(() => {

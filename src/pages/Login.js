@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { Container, Typography, TextField, Button, Box } from '@mui/material';
-import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import ky from 'ky';
-import { setUserId, setAuthenticated } from '../redux/actions/user';
+import { useStore } from '../redux/store/store';
 
 const Login = () => {
     const [id, setId] = useState('');
     const [password, setPassword] = useState('');
     const [wrongInfo, setWrongInfo] = useState(false);
 
-    const dispatch = useDispatch();
+    const {userId, setUserId} = useStore();
+    const {authenticated, setAuthenticated} = useStore();
+    const {userImagePath, setUserImagePath} = useStore();
+
     const navigate = useNavigate();
 
     const handleChange = (event) => {
@@ -28,10 +30,10 @@ const Login = () => {
 
             
             const userData = await response.json();
-
             // Redux 상태에 사용자 정보 저장
-            dispatch(setUserId(userData.id));
-            dispatch(setAuthenticated(true));
+            setUserId(userData.id);
+            setAuthenticated(true);
+            setUserImagePath(userData.profileImagePath);
 
             // 로그인 성공 시 index.js로 이동
             navigate('/');
