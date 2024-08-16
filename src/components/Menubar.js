@@ -1,18 +1,14 @@
-import { AppBar, Button, Toolbar } from "@mui/material";
+import {Box, AppBar, Button, Toolbar } from "@mui/material";
 import React from "react";
-import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
-import { setAuthenticated, setUserId } from "../redux/actions/user";
+import { useStore } from "../redux/store/store";
 
 export default function Menubar() {
-    const dispatch = useDispatch();
-    const userId = useSelector((state) => state.user.userId);
-
     const navigate = useNavigate();
 
+    const {userId, setUserId} = useStore();
+
     const handleLogout = () => {
-        dispatch(setUserId(null));
-        dispatch(setAuthenticated(false));
         alert("로그아웃 되었습니다.");
         navigate("/");
     }
@@ -24,9 +20,14 @@ export default function Menubar() {
                 Main
             </Button>
             {userId ? (
-                <Button color='inherit' onClick={handleLogout}>
-                    Logout
-                </Button>
+                <Box>
+                    <Button color="inherit" component={Link} to="/mypage">
+                        myPage
+                    </Button>
+                    <Button color='inherit' onClick={handleLogout}>
+                        Logout
+                    </Button>
+                </Box>
             ) : (
                 <>
                     <Button color="inherit" component={Link} to="/login">
