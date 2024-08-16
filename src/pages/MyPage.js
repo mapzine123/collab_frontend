@@ -1,6 +1,8 @@
 import React, {useState} from 'react';
 import { List, ListItemButton, ListItemText, Divider, Box, Typography } from '@mui/material';
 import UserInfo from '../components/UserInfo';
+import History from '../components/UserHistory';
+import UserHistory from '../components/UserHistory';
 
 const MyPage = () => {
     const INFO = 'info';
@@ -36,6 +38,9 @@ const MyPage = () => {
             <Box flexGrow={1} p={3}>
                 {mode === INFO && (
                     <UserInfo />
+                )}
+                {mode === HISTORY && (
+                    <UserHistory />
                 )}
             </Box>
         </Box>
