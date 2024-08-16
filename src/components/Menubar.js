@@ -7,8 +7,15 @@ export default function Menubar() {
     const navigate = useNavigate();
 
     const {userId, setUserId} = useStore();
+    const {authenticated, setAuthenticated} = useStore();
+    const {userImagePath, setUserImagePath} = useStore();
+
 
     const handleLogout = () => {
+        setUserId(null);
+        setAuthenticated(false);
+        setUserImagePath(null);
+
         alert("로그아웃 되었습니다.");
         navigate("/");
     }
