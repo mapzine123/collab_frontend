@@ -1,13 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { TextField, Button, Container, Typography, Box } from "@mui/material";
-import {useSelector} from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import ky from 'ky';
 import { useStore } from "../redux/store/store";
+import { articlePath, modifyMode, writeMode } from "../util/constant";
 
 const WriteArticle = () => {
-    const [title, setTitle] = useState("");
-    const [content, setContent] = useState("");
+    const location = useLocation();
+    const {selectedArticleNum=0, prevTitle = '', prevContent='', mode={writeMode}} = location.state || {};
+    const [title, setTitle] = useState(prevTitle);
+    const [content, setContent] = useState(prevContent);
+
+    console.dir(prevTitle);
+    console.dir(content);
 
     const {userId, setUserId} = useStore();
     const navigator = useNavigate();
@@ -22,25 +27,34 @@ const WriteArticle = () => {
         event.preventDefault();
         
         const article = {
+            articleNum: selectedArticleNum,
             articleTitle: title,
             articleContent : content,
             articleWriter : userId
         }
-
         try {
-            await ky.post('http://localhost:8080/api/articles', {
-                json: article,
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-            alert("성공적으로 작성되었습니다.");
-            navigator("/");
-            
+            if(mode === writeMode) {
+                await ky.post(`${articlePath}`, {
+                    json: article,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                alert("성공적으로 작성되었습니다.");
+            } else if(mode === modifyMode) {
+                await ky.put(`${articlePath}`, {
+                    json: article,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                alert("성공적으로 수정되었습니다.");
+            }
+            navigator("/")
         } catch(error) {
-            
-
+            console.error(error);
         }
+    
 
         
     };
@@ -48,8 +62,9 @@ const WriteArticle = () => {
     return (
         <Container maxWidth="sm" style={{ marginTop: '20px' }}>
             <Typography variant="h4" component="h1" gutterBottom>
-                새 글 작성
+                {mode === writeMode ? "새 글 작성" : "수정"}
             </Typography>
+
             <form onSubmit={handleSubmit}>
                 <Box mb={2}>
                     <TextField
@@ -75,7 +90,7 @@ const WriteArticle = () => {
                 </Box>
                 <Box display="flex" justifyContent="flex-end">
                     <Button type="submit" variant="contained" color="primary">
-                        작성
+                        {mode === writeMode ? "작성" : "수정"}
                     </Button>
                     <Button type="submit" variant="contained" color="primary" style={{marginLeft:'10px'}}>
                         취소
