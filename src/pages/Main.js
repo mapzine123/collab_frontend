@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, {MouseEvent, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TextField, Pagination, Box, Container, Button, List, Card, CardContent, ListItem, ListItemText, Typography, Avatar } from '@mui/material';
+import { TextField, Pagination, Box, Container, Button} from '@mui/material';
 import ky from 'ky';
 import { useStore } from '../redux/store/store';
+import ArticleList from '../components/ArticleList';
+import { articlePath, prePath } from '../util/constant';
 
 const Main = () => {
     const [currentPage, setCurrentPage] = useState(1);
@@ -15,7 +17,7 @@ const Main = () => {
 
     const fetchPosts = async (page, query='') => {
         try {
-            const response = await ky.get(`http://localhost:8080/api/articles?page=${page - 1}&search=${query}`).json();
+            const response = await ky.get(`${articlePath}?page=${page - 1}&search=${query}`).json();
             setPosts(response.content || []);
             setTotalPages(response.totalPages || 1);
         } catch (error) {
@@ -42,6 +44,8 @@ const Main = () => {
         fetchPosts(1, searchQuery);
     }
 
+
+
     useEffect(() => {
         fetchPosts(currentPage);
     }, [currentPage]);
@@ -49,46 +53,7 @@ const Main = () => {
     return (
         <Container maxWidth="md" style={{ marginTop: '20px', display: 'flex' }}>
             {/* Main Content */}
-            <Box style={{ flex: 1, marginRight: '300px' }}>
-                {posts.length !== 0 && (
-                    <List>
-                    {posts.map(post => (
-                        <Card key={post.articleNum} variant='outlined' style={{ marginBottom: '10px', width: '130%' }}>
-                            <CardContent>
-                                <ListItem>
-                                    <Box display="flex" alignItems="center" style={{ marginBottom: '8px' }}>
-                                        <Avatar alt={post.userId} src={post.profileImage} style={{ marginRight: '10px' }} />
-                                        <Typography variant="body1" component="div">
-                                            {post.articleWriter}
-                                        </Typography>
-                                    </Box>
-                                </ListItem>
-                                <ListItem>
-                                    <ListItemText
-                                        primary={
-                                            <Typography variant="h6" component="div">
-                                                {post.articleTitle}
-                                            </Typography>
-                                        }
-                                        secondary={
-                                            <Typography variant="body2" color="textSecondary">
-                                                {post.articleContent.length > 100 ? post.articleContent.substring(0, 100) + '...' : post.articleContent}
-                                            </Typography>
-                                        }
-                                    />
-                                </ListItem>
-                                <Typography variant="body2" color="textSecondary" style={{ marginTop: '8px' }}>
-                                    Created: {new Date(post.createdAt).toLocaleDateString()} | Views: {post.viewCount}
-                                </Typography>
-                                <Typography variant="body2" color="textSecondary">
-                                    Likes: {post.likeCount} | Comments: {post.commentCount} | Hates: {post.hateCount}
-                                </Typography>
-                            </CardContent>
-                        </Card>
-                    ))}
-                </List>
-                )}
-            </Box>
+            <ArticleList posts={posts} setPosts={setPosts}/>
 
             {/* Right Sidebar */}
             <Box 

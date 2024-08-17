@@ -3,6 +3,7 @@ import React, { Component } from 'react';
 
 import axios from 'axios'
 import { validatePassword } from '../util/validator';
+import { userPath } from '../util/constant';
 
 class Signup extends Component {
     constructor(props) {
@@ -52,7 +53,7 @@ class Signup extends Component {
         try {
             const data = {id, password}
             
-            const response = await axios.post(`http://localhost:8080/api/users`,
+            const response = await axios.post(`${userPath}`,
                 data, {
                     headers: {
                         'Content-Type' : 'application/json'

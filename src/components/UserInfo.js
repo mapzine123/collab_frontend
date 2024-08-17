@@ -4,6 +4,7 @@ import ky from 'ky';
 import { useStore } from '../redux/store/store';
 import { useNavigate } from 'react-router-dom';
 import { validatePassword } from '../util/validator';
+import { userPath } from '../util/constant';
 const UserInfo = () => {
     // 상태 관리: 비밀번호, 프로필 이미지
     const [password, setPassword] = useState('');
@@ -29,7 +30,7 @@ const UserInfo = () => {
         formData.append('fileExtension', fileExtension);
 
         try {
-            const response = await ky.post(`http://localhost:8080/api/users/image`,
+            const response = await ky.post(`${userPath}/image`,
                 {body: formData},
             );
 
@@ -55,7 +56,7 @@ const UserInfo = () => {
         }
 
         try {
-            const response = await ky.post('http://localhost:8080/api/users/password', {
+            const response = await ky.post(`${userPath}/password`, {
                 json: data,  // 요청 본문
                 headers: {
                     'Content-Type': 'application/json'
