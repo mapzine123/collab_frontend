@@ -3,6 +3,7 @@ import { Container, Typography, TextField, Button, Box } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import ky from 'ky';
 import { useStore } from '../redux/store/store';
+import { authPath } from '../util/constant';
 
 const Login = () => {
     const [id, setId] = useState('');
@@ -24,7 +25,7 @@ const Login = () => {
     const handleSubmit = async (event) => {
         event.preventDefault();
         try {
-            const response = await ky.post('http://localhost:8080/api/auth/login', {
+            const response = await ky.post(`${authPath}/login`, {
                 json: { id, password },
             });
 

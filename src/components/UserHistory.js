@@ -15,6 +15,8 @@ import {
     Button,
     Pagination
 } from '@mui/material';
+import ArticleList from './ArticleList';
+import { articlePath } from '../util/constant';
 
 const UserHistory = () => {
     // 상태 선언
@@ -30,7 +32,7 @@ const UserHistory = () => {
     useEffect(() => {
         const fetchPosts = async () => {
             try {
-                const response = await ky.get(`http://localhost:8080/api/articles/user?page=${currentPage-1}&userId=${userId}`).json();
+                const response = await ky.get(`${articlePath}/user?page=${currentPage-1}&userId=${userId}`).json();
                 setPosts(response.content || []);  // API 응답 데이터로 상태 업데이트
                 setTotalPages(response.totalPages || 1);
             } catch (error) {
@@ -60,48 +62,7 @@ const UserHistory = () => {
     return (
         <Container maxWidth="md" style={{ marginTop: '20px', display: 'flex' }}>
             {/* Main Content */}
-            <Box style={{ flex: 1, marginRight: '300px' }}>
-                {posts.length === 0 ? (
-                    <p>No posts found.</p>
-                ) : (
-                    <List>
-                        {posts.map(post => (
-                            <Card key={post.articleNum} variant='outlined' style={{ marginBottom: '10px', width: '100%' }}>
-                                <CardContent>
-                                    <ListItem>
-                                        <Box display="flex" alignItems="center" style={{ marginBottom: '8px' }}>
-                                            <Avatar alt={post.articleWriter} src={post.profileImage} style={{ marginRight: '10px' }} />
-                                            <Typography variant="body1" component="div">
-                                                {post.articleWriter}
-                                            </Typography>
-                                        </Box>
-                                    </ListItem>
-                                    <ListItem>
-                                        <ListItemText
-                                            primary={
-                                                <Typography variant="h6" component="div">
-                                                    {post.articleTitle}
-                                                </Typography>
-                                            }
-                                            secondary={
-                                                <Typography variant="body2" color="textSecondary">
-                                                    {post.articleContent.length > 100 ? post.articleContent.substring(0, 100) + '...' : post.articleContent}
-                                                </Typography>
-                                            }
-                                        />
-                                    </ListItem>
-                                    <Typography variant="body2" color="textSecondary" style={{ marginTop: '8px' }}>
-                                        Created: {new Date(post.createdAt).toLocaleDateString()} | Views: {post.viewCount}
-                                    </Typography>
-                                    <Typography variant="body2" color="textSecondary">
-                                        Likes: {post.likeCount} | Comments: {post.commentCount} | Hates: {post.hateCount}
-                                    </Typography>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </List>
-                )}
-            </Box>
+            <ArticleList posts={posts} setPosts={setPosts} />
 
             {/* Right Sidebar */}
             <Box 
