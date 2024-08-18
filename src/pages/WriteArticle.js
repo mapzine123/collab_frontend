@@ -11,9 +11,6 @@ const WriteArticle = () => {
     const [title, setTitle] = useState(prevTitle);
     const [content, setContent] = useState(prevContent);
 
-    console.dir(prevTitle);
-    console.dir(content);
-
     const {userId, setUserId} = useStore();
     const navigator = useNavigate();
 
