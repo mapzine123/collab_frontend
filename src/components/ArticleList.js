@@ -10,7 +10,8 @@ import { useNavigate } from 'react-router-dom';
 
 const ArticleList = ({posts, setPosts}) => {
     const {userId, setUserId} = useStore();
-    const [selectedArticleNum, setSelectedArticleNum] = useState('null');
+    const [selectedArticleNum, setSelectedArticleNum] = useState(null);
+    const [selectedPost, setSelectedPost] = useState(null);
     const [anchorEl, setAnchorEl] = useState(null);
     const open = Boolean(anchorEl);
     
@@ -29,7 +30,10 @@ const ArticleList = ({posts, setPosts}) => {
     const handleModify = (e, selectedArticleNum, prevTitle, prevContent, mode) => {
         navigator('/write', {
             state: {
-                selectedArticleNum, prevTitle, prevContent, mode
+                selectedArticleNum: selectedArticleNum,
+                prevTitle: prevTitle,
+                prevContent: prevContent,
+                mode
             }
         });
     }
@@ -62,12 +66,74 @@ const ArticleList = ({posts, setPosts}) => {
         }
     }
 
-    const handleLike = () => {
+    const handleLike = async (e, post) => {
+        const articleNum = post.articleNum;
 
+        if(userId === null) {
+            alert("로그인이 필요한 기능입니다.");
+            return;
+        }
+
+        try {
+            const response = await ky.post(`${articlePath}/reaction/like`, {
+                json: {
+                    userId,
+                    articleNum
+                },
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if(response.ok) {
+                const updatedArticle = await response.json();
+                await setPosts(prevPosts => 
+                    prevPosts.map(
+                        post => post.articleNum === articleNum 
+                        ? {...post, likeCount: updatedArticle.likeCount, isLike: !post.isLike, isHate: false, hateCount: updatedArticle.hateCount} 
+                        : post
+                    )
+                );
+            }
+
+        } catch(error) {
+            console.error(error); 
+        }
     }
 
-    const handleDislike = () => {
+    const handleHate = async (e, post) => {
+        const articleNum = post.articleNum;
 
+        if(userId === null) {
+            alert("로그인이 필요한 기능입니다.");
+            return;
+        }
+
+        try {
+            const response = await ky.post(`${articlePath}/reaction/hate`, {
+                json: {
+                    userId,
+                    articleNum
+                },
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if(response.ok) {
+                const updatedArticle = await response.json();
+                await setPosts(prevPosts => 
+                    prevPosts.map(
+                        post => post.articleNum === articleNum 
+                        ? {...post, likeCount: updatedArticle.likeCount, isLike: false, isHate: !post.isHate, hateCount: updatedArticle.hateCount} 
+                        : post
+                    )
+                );
+            }
+
+        } catch(error) {
+            console.error(error); 
+        }
     }
 
     return (
@@ -140,10 +206,23 @@ const ArticleList = ({posts, setPosts}) => {
 
                                 {/* Like and Dislike buttons */}
                                 <Box display="flex" flexDirection="row" alignItems="center" justifyContent="flex-start" style={{ marginTop: '8px' }}>
-                                    <Button onClick={() => handleLike(post.articleNum)}>
+                                    <Button 
+                                        onClick={(e) => handleLike(e, post)}
+                                        style={{
+                                            backgroundColor: post.isLike ? '#6a1b9a' : '#424242',
+                                            color: post.isLike ? '#ffffff' : '#bdbdbd',
+                                            marginRight: '8px' // 버튼 사이에 여백 추가
+                                        }}
+                                    >
                                         👍 {post.likeCount}
                                     </Button>
-                                    <Button onClick={() => handleDislike(post.articleNum)}>
+                                    <Button 
+                                        onClick={(e) => handleHate(e, post)}
+                                        style={{
+                                            backgroundColor: post.isHate ? '#c62828' : '#424242',
+                                            color: post.isHate ? '#ffffff' : '#bdbdbd',
+                                        }}
+                                    >
                                         👎 {post.hateCount}
                                     </Button>
                                 </Box>
