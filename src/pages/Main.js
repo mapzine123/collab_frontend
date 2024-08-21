@@ -1,10 +1,10 @@
-import React, {MouseEvent, useEffect, useState } from 'react';
+import React, {useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TextField, Pagination, Box, Container, Button} from '@mui/material';
 import ky from 'ky';
 import { useStore } from '../redux/store/store';
 import ArticleList from '../components/ArticleList';
-import { articlePath, prePath, writeMode } from '../util/constant';
+import { articlePath, writeMode } from '../util/constant';
 
 const Main = () => {
     const [currentPage, setCurrentPage] = useState(1);
@@ -13,7 +13,7 @@ const Main = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const navigate = useNavigate();
 
-    const {userId, setUserId} = useStore();
+    const {userId} = useStore();
 
     const fetchPosts = async (page, query='') => {
         try {
