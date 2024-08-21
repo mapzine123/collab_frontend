@@ -11,7 +11,7 @@ const WriteArticle = () => {
     const [title, setTitle] = useState(prevTitle);
     const [content, setContent] = useState(prevContent);
 
-    const {userId, setUserId} = useStore();
+    const {userId} = useStore();
     const navigator = useNavigate();
 
     useEffect(() => {
@@ -38,6 +38,7 @@ const WriteArticle = () => {
                     }
                 });
                 alert("성공적으로 작성되었습니다.");
+                
             } else if(mode === modifyMode) {
                 await ky.put(`${articlePath}`, {
                     json: article,
