@@ -9,9 +9,8 @@ import { useNavigate } from 'react-router-dom';
 
 
 const ArticleList = ({posts, setPosts}) => {
-    const {userId, setUserId} = useStore();
+    const {userId} = useStore();
     const [selectedArticleNum, setSelectedArticleNum] = useState(null);
-    const [selectedPost, setSelectedPost] = useState(null);
     const [anchorEl, setAnchorEl] = useState(null);
     const open = Boolean(anchorEl);
     
@@ -136,6 +135,19 @@ const ArticleList = ({posts, setPosts}) => {
         }
     }
 
+    const handleComment = (e, post) => {
+        // 댓글 작성 기능 구현
+    }
+
+    const handleContentView = (e, post) => {
+        // 게시글 하나 따로 자세히 보기
+        navigator("/contentView", {
+            state: {
+                post: post
+            }
+        });
+    }
+
     return (
         <Box style={{ flex: 1, marginRight: '300px' }}>
                 {posts.length !== 0 && (
@@ -152,9 +164,7 @@ const ArticleList = ({posts, setPosts}) => {
                                             </Typography>
                                         </Box>
                                         {post.articleWriter === userId && (
-
-                                            <Box>
-                                            
+                                            <Box> 
                                                 <Button
                                                     id="basic-button"
                                                     aria-controls={open ? 'basic-menu' : undefined}
@@ -185,6 +195,8 @@ const ArticleList = ({posts, setPosts}) => {
                                 </ListItem>
                                 <ListItem>
                                     <ListItemText
+
+                                        onClick={(e) => handleContentView(e, post)}
                                         primary={
                                             <Typography variant="h6" component="div">
                                                 {post.articleTitle}
@@ -195,14 +207,19 @@ const ArticleList = ({posts, setPosts}) => {
                                                 {post.articleContent.length > 100 ? post.articleContent.substring(0, 100) + '...' : post.articleContent}
                                             </Typography>
                                         }
+
+                                        style={{
+                                            cursor: 'pointer',
+                                            borderRadius: '12px',
+                                            padding: '6px'
+                                        }}
+
                                     />
                                 </ListItem>
                                 <Typography variant="body2" color="textSecondary" style={{ marginTop: '8px' }}>
                                     Created: {new Date(post.createdAt).toLocaleDateString()} | Views: {post.viewCount}
                                 </Typography>
-                                <Typography variant="body2" color="textSecondary">
-                                    Comments: {post.commentCount}
-                                </Typography>
+
 
                                 {/* Like and Dislike buttons */}
                                 <Box display="flex" flexDirection="row" alignItems="center" justifyContent="flex-start" style={{ marginTop: '8px' }}>
@@ -211,7 +228,6 @@ const ArticleList = ({posts, setPosts}) => {
                                         style={{
                                             backgroundColor: post.isLike ? '#6a1b9a' : '#424242',
                                             color: post.isLike ? '#ffffff' : '#bdbdbd',
-                                            marginRight: '8px' // 버튼 사이에 여백 추가
                                         }}
                                     >
                                         👍 {post.likeCount}
@@ -220,10 +236,21 @@ const ArticleList = ({posts, setPosts}) => {
                                         onClick={(e) => handleHate(e, post)}
                                         style={{
                                             backgroundColor: post.isHate ? '#c62828' : '#424242',
-                                            color: post.isHate ? '#ffffff' : '#bdbdbd',
+                                            color: !post.isHate ? '#bdbdbd' : '',
+                                            marginRight: '8px', // 버튼 사이에 여백 추가
+                                            marginLeft: '8px'
                                         }}
                                     >
                                         👎 {post.hateCount}
+                                    </Button>
+                                    <Button 
+                                            onClick={(e) => handleComment(e, post)}
+                                            style={{
+                                                color: '#bdbdbd',
+                                                backgroundColor: '#424242'
+                                            }}
+                                    >
+                                        💬 {post.commentCount}
                                     </Button>
                                 </Box>
                             </CardContent>
