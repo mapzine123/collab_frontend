@@ -8,6 +8,7 @@ import { createTheme, CssBaseline, ThemeProvider } from "@mui/material";
 import WriteArticle from "./pages/WriteArticle";
 import MyPage from "./pages/MyPage";
 import { usePersistedStore } from "./redux/store/store";
+import ContentView from "./pages/ContentView";
 
 const darkTheme = createTheme({
   palette: {
@@ -35,6 +36,7 @@ function App() {
           <Route path="/signup" element={<Signup />} />
           <Route path="/write" element={<WriteArticle />} />
           <Route path="/myPage" element={<MyPage />} />
+          <Route path="/contentView" element={<ContentView />} />
         </Routes>
       </Router>
     </ThemeProvider>
