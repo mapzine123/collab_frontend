@@ -93,6 +93,7 @@ const Main = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
             fullWidth
             style={{ marginBottom: "10px" }}
+            autoComplete="off"
           />
           <Button
             variant="contained"

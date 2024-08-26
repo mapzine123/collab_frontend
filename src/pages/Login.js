@@ -77,6 +77,7 @@ const Login = () => {
             autoFocus
             value={id}
             onChange={handleChange}
+            autoComplete="off"
           />
           <TextField
             variant="outlined"
@@ -89,6 +90,7 @@ const Login = () => {
             type="password"
             value={password}
             onChange={handleChange}
+            autoComplete="off"
           />
           <Button
             type="submit"

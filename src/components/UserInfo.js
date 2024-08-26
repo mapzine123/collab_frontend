@@ -103,6 +103,7 @@ const UserInfo = () => {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           sx={{ mb: 2 }}
+          autoComplete="off"
         />
         <Button variant="contained" color="primary" onClick={handleSubmit}>
           저장

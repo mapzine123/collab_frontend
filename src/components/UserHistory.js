@@ -4,15 +4,6 @@ import { useStore } from "../redux/store/store";
 import {
   Container,
   Box,
-  Card,
-  CardContent,
-  Typography,
-  List,
-  ListItem,
-  ListItemText,
-  Avatar,
-  TextField,
-  Button,
   Pagination,
 } from "@mui/material";
 import ArticleList from "./ArticleList";
