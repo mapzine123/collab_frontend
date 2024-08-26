@@ -62,7 +62,7 @@ const ContentView = () => {
       };
       fetchComments();
     }
-  }, [post]); // post가 변경될 때마다 댓글을 다시 불러옴
+  }, [commentCount]); // post가 변경될 때마다 댓글을 다시 불러옴
 
   if (!post) {
     return (
@@ -134,9 +134,31 @@ const ContentView = () => {
     handleClose();
   };
 
-  const handleDelete = async () => {
+  const handleDelete = async (e, commentId) => {
     // 삭제 로직
-    handleClose();
+    try {
+      const response = await ky.delete(`${articlePath}/comments/${commentId}`, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+  
+      if(response.ok) {
+        setComments(
+          (prevComments) => 
+            prevComments.filter((comment) => comment.commentId !== selectedCommentId)
+        );
+  
+        setCommentCount((prevCount) => prevCount - 1);
+        handleClose();
+
+      } else {
+        alert("댓글 삭제에 실패했습니다.");
+      }
+    } catch (error) {
+      alert("댓글 삭제 중 오류가 발생했습니다.");
+    }
+
   };
 
   const handleReport = () => {
@@ -278,6 +300,7 @@ const ContentView = () => {
                             variant="outlined"
                             value={modifyText}
                             onChange={(e) => setModifyText(e.target.value)}
+                            autoComplete="off"
                           />
                           <Button
                             variant="contained"
@@ -350,7 +373,7 @@ const ContentView = () => {
                               >
                                 수정
                               </MenuItem>,
-                              <MenuItem key="delete" onClick={handleDelete}>
+                              <MenuItem key="delete" onClick={(e) => handleDelete(e, comment.commentId)}>
                                 삭제
                               </MenuItem>,
                             ]
@@ -387,6 +410,7 @@ const ContentView = () => {
                 value={commentText}
                 onFocus={() => setTextFieldFucus(true)}
                 onChange={(e) => setCommentText(e.target.value)}
+                autoComplete="off"
               />
               {textFieldFocus && (
                 <Collapse in={textFieldFocus}>
