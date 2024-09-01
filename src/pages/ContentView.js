@@ -22,6 +22,7 @@ import MoreVertIcon from "@mui/icons-material/MoreVert";
 import ky from "ky";
 import { useStore } from "../redux/store/store";
 import { articlePath, modifyMode } from "../util/constant";
+import { UpdateSharp } from "@mui/icons-material";
 
 const ContentView = () => {
   const location = useLocation();
@@ -62,7 +63,7 @@ const ContentView = () => {
       };
       fetchComments();
     }
-  }, [commentCount]); // post가 변경될 때마다 댓글을 다시 불러옴
+  }, [commentCount]); // comment 수가 변경될 때마다 댓글을 다시 불러옴
 
   if (!post) {
     return (
@@ -74,12 +75,80 @@ const ContentView = () => {
     );
   }
 
-  const handleLike = (commentId) => {
-    console.log(`Like clicked for comment ${commentId}`);
+  const handleLike = async (commentId) => {
+    if(userId === null) {
+      alert("로그인이 필요한 기능입니다.");
+      return;
+    }
+
+    const data = {
+      commentId: commentId,
+      userId: userId
+    }
+
+    try {
+      const response = await ky.post(`${articlePath}/comments/reaction/like`, {
+        json: data,
+      })
+
+      if(response.ok) {
+        const updateComment = await response.json();
+        await setComments((prevComments) =>
+          prevComments.map((comment) =>
+            comment.commentId === commentId 
+              ? {
+                ...comment,
+                likeCount: updateComment.likeCount,
+                isLike: !comment.isLike,
+                isHate: false,
+                hateCount: updateComment.hateCount,
+              }
+            : comment
+          )
+        );
+      }
+
+    } catch(error) {
+      console.error(error);
+    }
   };
 
-  const handleHate = (commentId) => {
-    console.log(`Dislike clicked for comment ${commentId}`);
+  const handleHate = async (commentId) => {
+    if(userId === null) {
+      alert("로그인이 필요한 기능입니다.");
+      return;
+    }
+
+    const data = {
+      commentId: commentId,
+      userId: userId
+    }
+
+    try {
+      const response = await ky.post(`${articlePath}/comments/reaction/hate`, {
+        json: data,
+      })
+
+      if(response.ok) {
+        const updateComment = await response.json();
+        await setComments((prevComments) =>
+          prevComments.map((comment) =>
+            comment.commentId === commentId 
+              ? {
+                ...comment,
+                likeCount: updateComment.likeCount,
+                isLike: false,
+                isHate: !comment.isHate,
+                hateCount: updateComment.hateCount,
+              }
+            : comment
+          )
+        );
+      }
+
+    } catch(error) {
+      console.error(error);
+    }
   };
 
   const handleCommentSubmit = async () => {
@@ -327,6 +396,7 @@ const ContentView = () => {
                       <Box display="flex" alignItems="center" mt={1}>
                         <IconButton
                           onClick={() => handleLike(comment.commentId)}
+                          color={comment.isLike ? "primary" : "default"}
                           size="small"
                         >
                           <ThumbUpIcon fontSize="small" />
@@ -339,6 +409,7 @@ const ContentView = () => {
                         </Typography>
                         <IconButton
                           onClick={() => handleHate(comment.commentId)}
+                          color={comment.isHate ? "secondary" : "default"}
                           size="small"
                         >
                           <ThumbDownIcon fontSize="small" />
