@@ -21,14 +21,15 @@ import ThumbDownIcon from "@mui/icons-material/ThumbDown";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import ky from "ky";
 import { useStore } from "../redux/store/store";
-import { articlePath, commentPath, modifyMode } from "../util/constant";
-import { UpdateSharp } from "@mui/icons-material";
+import { commentPath, modifyMode } from "../util/constant";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 
 const ContentView = () => {
   const location = useLocation();
   const { post } = location.state || {};
+  const { userId } = useStore();
+  
   const [commentText, setCommentText] = useState("");
   const [modifyText, setModifyText] = useState("");
   const [expandedComments, setExpandedComments] = useState({});
@@ -39,18 +40,25 @@ const ContentView = () => {
   const [selectedCommentId, setSelectedCommentId] = useState("");
   const [textFieldFocus, setTextFieldFucus] = useState(false);
   const [mode, setMode] = useState("view");
-  const { userId } = useStore();
+
   const [subCommentText, setSubCommentText] = useState(""); // 대댓글 텍스트 상태 추가
   const [replyComment, setReplyComment] = useState(0);
   const [openReplys, setOpenResplys] = useState(new Set());
+  const [subCommentFocus, setSubCommentFocus] = useState(false);
+
+
+
   useEffect(() => {
     if (post) {
       const fetchComments = async () => {
         try {
           const response = await ky
-            .get(`${commentPath}/${post.articleId}`)
+            .get(`${commentPath}/${post.articleId}`, {
+              searchParams: {
+                userId: userId,
+              },
+            })
             .json();
-          console.log(response.content);
 
           if (response.status === 204) {
             setComments([]);
@@ -155,6 +163,10 @@ const ContentView = () => {
 
   // 댓글 추가
   const handleCommentSubmit = async () => {
+    if(userId === null) {
+      alert("로그인이 필요한 기능입니다.");
+      return;
+    }
     const articleId = post.articleId;
     const data = {
       articleId: articleId,
@@ -269,10 +281,83 @@ const ContentView = () => {
     }
   };
 
-  const handleReply = (commentId) => {
-    setSelectedCommentId(commentId);
-  };
+  // 대댓글 좋아요
+  const handleSubCommentLike = async (subComment) => {
+    if (userId === null) {
+      alert("로그인이 필요한 기능입니다.");
+      return;
+    }
 
+    const data = {
+      subCommentId: subComment.subCommentId,
+      userId: userId,
+    };
+    try {
+      const response = await ky.post(`${commentPath}/subComments/like`, {
+        json: data,
+      });
+
+      const updatedData = await response.json();
+      setComments((prevComments) =>
+        prevComments.map((comment) =>
+          comment.commentId === subComment.commentId
+            ? {
+                ...comment,
+                subComments: comment.subComments.map((sc) =>
+                  sc.subCommentId === updatedData.subCommentId
+                    ? {
+                        ...sc,
+                        ...updatedData,
+                      }
+                    : sc
+                ),
+              }
+            : comment
+        )
+      );
+    } catch (error) {
+      console.error(error);
+      alert("좋아요 처리 중 오류가 발생했습니다.");
+    }
+  };
+  const handleSubCommentHate = async (subComment) => {
+    if (userId === null) {
+      alert("로그인이 필요한 기능입니다.");
+      return;
+    }
+
+    const data = {
+      subCommentId: subComment.subCommentId,
+      userId: userId,
+    };
+    try {
+      const response = await ky.post(`${commentPath}/subComments/hate`, {
+        json: data,
+      });
+
+      const updatedData = await response.json();
+      setComments((prevComments) =>
+        prevComments.map((comment) =>
+          comment.commentId === subComment.commentId
+            ? {
+                ...comment,
+                subComments: comment.subComments.map((sc) =>
+                  sc.subCommentId === updatedData.subCommentId
+                    ? {
+                        ...sc,
+                        ...updatedData,
+                      }
+                    : sc
+                ),
+              }
+            : comment
+        )
+      );
+    } catch (error) {
+      console.error(error);
+      alert("싫어요 처리 중 오류가 발생했습니다.");
+    }
+  };
   const renderCommentContent = (comment) => {
     const maxLength = 200; // 최대 문자 길이
     const isExpanded = expandedComments[comment.commentId];
@@ -293,37 +378,45 @@ const ContentView = () => {
     );
   };
   // 대댓글 기능
-  const handleToggleReplys = (comment) => {
-    if (openReplys.has(comment.commentId)) {
-      openReplys.delete(comment.commentId);
-    } else {
-      handleGetReplys(comment);
-      openReplys.add(comment.commentId);
-    }
+  const handleToggleReplys = (commentId) => {
+    setOpenResplys((prevOpenReplys) => {
+      const newOpenReplys = new Set(prevOpenReplys);
+      if (newOpenReplys.has(commentId)) {
+        newOpenReplys.delete(commentId);
+      } else {
+        newOpenReplys.add(commentId);
+        handleGetReplys(commentId);
+      }
+
+      return newOpenReplys;
+    });
   };
 
-  const handleGetReplys = async (comment) => {
+  const handleGetReplys = async (commentId) => {
     try {
-      if (comment.subComments.length === 0) {
+      const comment = comments.find((c) => c.commentId === commentId);
+
+      if (comment && comment.subComments.length === 0) {
         const nowCommentId = comment.commentId;
         const response = await ky
-          .get(`${commentPath}/subComments/${comment.commentId}`)
+          .get(`${commentPath}/subComments/${comment.commentId}`, {
+            searchParams: {
+              userId: userId,
+            },
+          })
           .json();
         const newSubComments = response.content;
         setComments((prevComments) =>
-          prevComments.map((comment) =>
-            comment.commentId === nowCommentId
+          prevComments.map((c) =>
+            c.commentId === commentId
               ? {
-                  ...comment,
-                  subComments: comment.subComments
-                    ? [...comment.subComments, ...newSubComments] // 기존의 subComments + 새로 받아온 subComments
-                    : newSubComments, // 기존 subComments가 없는 경우, 새로 받아온 subComments로 설정
+                  ...c,
+                  subComments: newSubComments,
                 }
-              : comment
+              : c
           )
         );
       }
-
     } catch (error) {
       console.error(error);
     }
@@ -331,6 +424,11 @@ const ContentView = () => {
 
   // 대댓글 추가
   const handleReplySubmit = async (commentId) => {
+    if(userId === null) {
+      alert("로그인이 필요한 기능입니다.");
+      return;
+    }
+
     const data = {
       commentId: commentId,
       userId: userId,
@@ -338,7 +436,6 @@ const ContentView = () => {
     };
 
     try {
-      console.log(subCommentText);
       const response = await ky
         .post(`${commentPath}/subComments`, {
           json: data,
@@ -370,10 +467,10 @@ const ContentView = () => {
   };
 
   return (
-    <Container maxWidth="lg" style={{ marginTop: "2rem", width: "100%" }}>
-      <Grid container spacing={2}>
+    <Container maxWidth="xl" style={{ marginTop: "2rem" }}>
+      <Grid container spacing={3}>
         {/* Left side: Article content */}
-        <Grid item xs={12} md={8}>
+        <Grid item xs={12} md={7} lg={8}>
           <Card style={{ minHeight: "30vh" }}>
             <CardContent>
               <Typography variant="h4" component="h1" gutterBottom>
@@ -395,7 +492,7 @@ const ContentView = () => {
         </Grid>
 
         {/* Right side: Comments */}
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} md={5} lg={4}>
           <Paper
             style={{
               display: "flex",
@@ -403,6 +500,7 @@ const ContentView = () => {
               padding: "1rem",
               minHeight: "30vh",
               width: "20vw",
+              overflowY: "auto",
             }}
           >
             <Typography variant="h6" gutterBottom>
@@ -414,13 +512,19 @@ const ContentView = () => {
               flexGrow={1}
               style={{
                 overflow: "auto",
+                marginBottom: "1rem",
                 overflowX: "hidden",
                 maxHeight: "50vh",
               }}
             >
               {comments.length > 0 ? (
                 comments.map((comment, index) => (
-                  <Box key={comment.commentId || index} mb={2} display="flex">
+                  <Box
+                    key={comment.commentId || index}
+                    mb={2}
+                    display="flex"
+                    alignItems="flex-start"
+                  >
                     {/* 아바타 */}
                     <Avatar
                       alt={comment.author}
@@ -566,32 +670,58 @@ const ContentView = () => {
                         </Menu>
                       </Box>
                       {replyComment === comment.commentId && (
-                        <Box mt={1}>
+                        <Box
+                          sx={{
+                            width: "100%",
+                            padding: "16px",
+                            borderRadius: "8px",
+                            position: "relative",
+                            marginTop: "8px",
+                          }}
+                        >
                           <TextField
-                            fullWidth
-                            variant="outlined"
                             label="대댓글 작성"
+                            variant="standard"
+                            fullWidth
                             value={subCommentText}
+                            onFocus={() => setSubCommentFocus(true)}
                             onChange={(e) => setSubCommentText(e.target.value)}
+                            autoComplete="off"
                           />
-                          <Button
-                            onClick={() => handleReplySubmit(comment.commentId)}
-                            variant="contained"
-                            color="primary"
-                            size="small"
-                            style={{ marginTop: "8px" }}
-                          >
-                            대댓글 추가
-                          </Button>
-                          <Button
-                            onClick={() => setReplyComment(0)}
-                            variant="contained"
-                            color="primary"
-                            size="small"
-                            style={{ marginTop: "8px" }}
-                          >
-                            취소
-                          </Button>
+                          <Collapse in={subCommentFocus}>
+                            <Box
+                              sx={{
+                                display: "flex",
+                                justifyContent: "flex-end",
+                                marginTop: "16px",
+                                transition: "all 0.3s ease",
+                              }}
+                            >
+                              <Button
+                                variant="outlined"
+                                color="secondary"
+                                sx={{ marginRight: "8px" }}
+                                onClick={() => {
+                                  setSubCommentFocus(false);
+                                  setReplyComment(0);
+                                  setSubCommentText("");
+                                }}
+                              >
+                                취소
+                              </Button>
+                              <Button
+                                variant="contained"
+                                color="primary"
+                                onClick={() => {
+                                  handleReplySubmit(comment.commentId);
+                                  setSubCommentFocus(false);
+                                  setReplyComment(0);
+                                }}
+                              >
+                                대댓글 추가
+                              </Button>
+                            </Box>
+                          </Collapse>
                         </Box>
                       )}
                       {/* 대댓글 보기 버튼 및 대댓글 렌더링 */}
@@ -599,7 +729,9 @@ const ContentView = () => {
                         <>
                           <Button
                             size="small"
-                            onClick={() => handleToggleReplys(comment)}
+                            onClick={() =>
+                              handleToggleReplys(comment.commentId)
+                            }
                             style={{ alignSelf: "flex-start" }}
                           >
                             {openReplys.has(comment.commentId) ? (
@@ -609,18 +741,23 @@ const ContentView = () => {
                             )}
                             답글 {comment.subCommentCount}개
                           </Button>
+                          {/* 대댓글 섹션 */}
                           <Collapse
                             in={openReplys.has(comment.commentId)}
                             timeout="auto"
                             unmountOnExit
                           >
-                            <Box mt={1} ml={8}>
+                            <Box
+                              mt={1}
+                              ml={2}
+                              pl={1}
+                              borderLeft={1}
+                              borderColor="grey.300"
+                            >
                               {comment.subComments.map(
                                 (subComment, subCommentIndex) => (
                                   <Box
-                                    key={
-                                      subCommentIndex
-                                    }
+                                    key={subCommentIndex}
                                     display="flex"
                                     mb={2}
                                   >
@@ -657,7 +794,7 @@ const ContentView = () => {
                                       >
                                         <IconButton
                                           onClick={() =>
-                                            handleLike(subComment.commentId)
+                                            handleSubCommentLike(subComment)
                                           }
                                           color={
                                             subComment.isLike
@@ -676,7 +813,7 @@ const ContentView = () => {
                                         </Typography>
                                         <IconButton
                                           onClick={() =>
-                                            handleHate(subComment.commentId)
+                                            handleSubCommentHate(subComment)
                                           }
                                           color={
                                             subComment.isHate
@@ -711,7 +848,6 @@ const ContentView = () => {
                 </Typography>
               )}
             </Box>
-
             {/* 댓글 작성 섹션 */}
             <Box
               sx={{
