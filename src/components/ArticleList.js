@@ -21,32 +21,32 @@ import { useNavigate } from "react-router-dom";
 
 const ArticleList = ({ posts, setPosts }) => {
   const { userId } = useStore();
-  const [selectedArticleNum, setSelectedArticleNum] = useState(null);
+  const [selectedArticleId, setSelectedArticleId] = useState(null);
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
 
   const navigator = useNavigate();
 
-  const handleClick = (e, articleNum) => {
+  const handleClick = (e, articleId) => {
     setAnchorEl(e.currentTarget);
-    setSelectedArticleNum(articleNum);
+    setSelectedArticleId(articleId);
   };
 
   const handleClose = () => {
     setAnchorEl(null);
-    setSelectedArticleNum(null);
+    setSelectedArticleId(null);
   };
 
   const handleModify = (
     e,
-    selectedArticleNum,
+    selectedArticleId,
     prevTitle,
     prevContent,
     mode
   ) => {
     navigator("/write", {
       state: {
-        selectedArticleNum: selectedArticleNum,
+        selectedArticleId: selectedArticleId,
         prevTitle: prevTitle,
         prevContent: prevContent,
         mode,
@@ -55,7 +55,7 @@ const ArticleList = ({ posts, setPosts }) => {
   };
 
   const handleDelete = async (e) => {
-    if (selectedArticleNum === null) {
+    if (selectedArticleId === null) {
       return;
     }
 
@@ -63,7 +63,7 @@ const ArticleList = ({ posts, setPosts }) => {
       const response = await ky.delete(`${articlePath}`, {
         json: {
           userId,
-          articleNum: selectedArticleNum,
+          ArticleId: selectedArticleId,
         },
         headers: {
           "Content-Type": "application/json",
@@ -72,7 +72,7 @@ const ArticleList = ({ posts, setPosts }) => {
 
       if (response.ok) {
         setPosts((prevPosts) =>
-          prevPosts.filter((post) => post.articleNum !== selectedArticleNum)
+          prevPosts.filter((post) => post.ArticleId !== selectedArticleId)
         );
         alert("게시글이 삭제되었습니다.");
       }
@@ -84,7 +84,7 @@ const ArticleList = ({ posts, setPosts }) => {
   };
 
   const handleLike = async (e, post) => {
-    const articleNum = post.articleNum;
+    const articleId = post.articleId;
 
     if (userId === null) {
       alert("로그인이 필요한 기능입니다.");
@@ -95,7 +95,7 @@ const ArticleList = ({ posts, setPosts }) => {
       const response = await ky.post(`${articlePath}/reaction/like`, {
         json: {
           userId,
-          articleNum,
+          articleId,
         },
         headers: {
           "Content-Type": "application/json",
@@ -106,7 +106,7 @@ const ArticleList = ({ posts, setPosts }) => {
         const updatedArticle = await response.json();
         await setPosts((prevPosts) =>
           prevPosts.map((post) =>
-            post.articleNum === articleNum
+            post.articleId === articleId
               ? {
                   ...post,
                   likeCount: updatedArticle.likeCount,
@@ -124,7 +124,7 @@ const ArticleList = ({ posts, setPosts }) => {
   };
 
   const handleHate = async (e, post) => {
-    const articleNum = post.articleNum;
+    const articleId = post.articleId;
 
     if (userId === null) {
       alert("로그인이 필요한 기능입니다.");
@@ -135,7 +135,7 @@ const ArticleList = ({ posts, setPosts }) => {
       const response = await ky.post(`${articlePath}/reaction/hate`, {
         json: {
           userId,
-          articleNum,
+          articleId,
         },
         headers: {
           "Content-Type": "application/json",
@@ -146,7 +146,7 @@ const ArticleList = ({ posts, setPosts }) => {
         const updatedArticle = await response.json();
         await setPosts((prevPosts) =>
           prevPosts.map((post) =>
-            post.articleNum === articleNum
+            post.articleId === articleId
               ? {
                   ...post,
                   likeCount: updatedArticle.likeCount,
@@ -182,7 +182,7 @@ const ArticleList = ({ posts, setPosts }) => {
         <List>
           {posts.map((post) => (
             <Card
-              key={post.articleNum}
+              key={post.articleId}
               variant="outlined"
               style={{ marginBottom: "10px", width: "130%" }}
             >
@@ -216,7 +216,7 @@ const ArticleList = ({ posts, setPosts }) => {
                           aria-controls={open ? "basic-menu" : undefined}
                           aria-haspopup="true"
                           aria-expanded={open ? "true" : undefined}
-                          onClick={(e) => handleClick(e, post.articleNum)} // Handle click
+                          onClick={(e) => handleClick(e, post.ArticleId)} // Handle click
                         >
                           <Typography variant="h4" color="textSecondary">
                             ⁞
@@ -235,7 +235,7 @@ const ArticleList = ({ posts, setPosts }) => {
                             onClick={(e) =>
                               handleModify(
                                 e,
-                                post.articleNum,
+                                post.ArticleId,
                                 post.articleTitle,
                                 post.articleContent,
                                 modifyMode
