@@ -29,7 +29,7 @@ const ContentView = () => {
   const location = useLocation();
   const { post } = location.state || {};
   const { userId } = useStore();
-  
+
   const [commentText, setCommentText] = useState("");
   const [modifyText, setModifyText] = useState("");
   const [expandedComments, setExpandedComments] = useState({});
@@ -45,8 +45,8 @@ const ContentView = () => {
   const [replyComment, setReplyComment] = useState(0);
   const [openReplys, setOpenResplys] = useState(new Set());
   const [subCommentFocus, setSubCommentFocus] = useState(false);
-
-
+  const [modifyedSubCommentId, setModifyedSubCommentId] = useState("");
+  const [subCommentModifyText, setSubCommentModifyText] = useState("");
 
   useEffect(() => {
     if (post) {
@@ -163,7 +163,7 @@ const ContentView = () => {
 
   // 댓글 추가
   const handleCommentSubmit = async () => {
-    if(userId === null) {
+    if (userId === null) {
       alert("로그인이 필요한 기능입니다.");
       return;
     }
@@ -424,7 +424,7 @@ const ContentView = () => {
 
   // 대댓글 추가
   const handleReplySubmit = async (commentId) => {
-    if(userId === null) {
+    if (userId === null) {
       alert("로그인이 필요한 기능입니다.");
       return;
     }
@@ -465,6 +465,98 @@ const ContentView = () => {
       console.error(error);
     }
   };
+
+  // 메뉴 기능
+  const handleMenuOpen = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleSubCommentEdit = () => {};
+
+  // 대댓글 삭제
+  const handleSubCommentDelete = async (commentId, subCommentId) => {
+    try {
+      const response = await ky.delete(`${commentPath}/subComments`, {
+        json: {
+          commentId: commentId,
+          subCommentId: subCommentId,
+        },
+      });
+
+      if (response.ok) {
+        setComments((prevComments) =>
+          prevComments.map((comment) =>
+            comment.commentId === commentId
+              ? {
+                  ...comment,
+                  subComments: comment.subComments.filter(
+                    (subComment) => subComment.subCommentId !== subCommentId
+                  ),
+                  subCommentCount: Math.max(
+                    0,
+                    (comment.subCommentCount || 0) - 1
+                  ),
+                }
+              : comment
+          )
+        );
+        alert("답글이 삭제되었습니다.");
+      } else {
+        alert("오류가 발생했습니다.");
+      }
+    } catch {
+      console.error();
+    }
+  };
+
+  // 대댓글 수정
+  const clickSubCommentModify = (subCommentId) => {
+    setModifyedSubCommentId(subCommentId);
+    setAnchorEl(null);
+  };
+
+  const cancelModifyedSubComment = () => {
+    setAnchorEl(null);
+    setModifyedSubCommentId("");
+  }
+
+  const handleSubCommentModifyed = async (commentId) => {
+    try {
+      const response = await ky.put(`${commentPath}/subComments`, {
+        json: {
+          subCommentId: modifyedSubCommentId,
+          subCommentText:subCommentModifyText
+        }
+      }).json();
+
+      setComments((prevComments) =>
+        prevComments.map((comment) =>
+          comment.commentId === commentId
+            ? {
+                ...comment,
+                subComments: comment.subComments.map((subComment) =>
+                  subComment.subCommentId === modifyedSubCommentId
+                    ? {
+                        ...subComment,
+                        subCommentText: subCommentModifyText
+                      }
+                    : subComment
+                )
+              }
+            : comment
+        )
+      );
+
+      setModifyedSubCommentId("");
+      setSubCommentModifyText(null);
+    } catch(error) {
+      console.error();
+    }
+  }
 
   return (
     <Container maxWidth="xl" style={{ marginTop: "2rem" }}>
@@ -741,6 +833,7 @@ const ContentView = () => {
                             )}
                             답글 {comment.subCommentCount}개
                           </Button>
+
                           {/* 대댓글 섹션 */}
                           <Collapse
                             in={openReplys.has(comment.commentId)}
@@ -756,87 +849,176 @@ const ContentView = () => {
                             >
                               {comment.subComments.map(
                                 (subComment, subCommentIndex) => (
-                                  <Box
-                                    key={subCommentIndex}
-                                    display="flex"
-                                    mb={2}
-                                  >
-                                    <Avatar
-                                      alt={subComment.userId}
-                                      src="/static/images/avatar/2.jpg"
-                                      style={{
-                                        marginRight: "16px",
-                                        width: "48px",
-                                        height: "48px",
-                                      }}
-                                    />
-                                    <Box flexGrow={1}>
-                                      <Typography
-                                        variant="body2"
-                                        color="textPrimary"
-                                        fontSize="14px"
-                                        fontWeight="bold"
-                                        style={{ margin: "10px 0" }}
-                                      >
-                                        {subComment.userId}
-                                      </Typography>
-                                      <Typography
-                                        variant="body2"
-                                        color="textSecondary"
-                                        component="div"
-                                      >
-                                        {subComment.subCommentText}
-                                      </Typography>
+                                  <Box key={subCommentIndex} mb={2}>
+                                    {subComment.subCommentId !==
+                                    modifyedSubCommentId ? (
+                                      <Box display="flex">
+                                        <Avatar
+                                          alt={subComment.userId}
+                                          src="/static/images/avatar/2.jpg"
+                                          style={{
+                                            marginRight: "16px",
+                                            width: "48px",
+                                            height: "48px",
+                                          }}
+                                        />
+                                        <Box flexGrow={1}>
+                                          <Typography
+                                            variant="body2"
+                                            color="textPrimary"
+                                            fontSize="14px"
+                                            fontWeight="bold"
+                                            style={{ margin: "10px 0" }}
+                                          >
+                                            {subComment.userId}
+                                          </Typography>
+                                          <Typography
+                                            variant="body2"
+                                            color="textSecondary"
+                                            component="div"
+                                          >
+                                            {subComment.subCommentText}
+                                          </Typography>
+                                          <Box
+                                            display="flex"
+                                            alignItems="center"
+                                            mt={1}
+                                          >
+                                            <IconButton
+                                              onClick={() =>
+                                                handleSubCommentLike(subComment)
+                                              }
+                                              color={
+                                                subComment.isLike
+                                                  ? "primary"
+                                                  : "default"
+                                              }
+                                              size="small"
+                                            >
+                                              <ThumbUpIcon fontSize="small" />
+                                            </IconButton>
+                                            <Typography
+                                              variant="body2"
+                                              style={{ marginRight: "8px" }}
+                                            >
+                                              {subComment.likeCount}
+                                            </Typography>
+                                            <IconButton
+                                              onClick={() =>
+                                                handleSubCommentHate(subComment)
+                                              }
+                                              color={
+                                                subComment.isHate
+                                                  ? "secondary"
+                                                  : "default"
+                                              }
+                                              size="small"
+                                            >
+                                              <ThumbDownIcon fontSize="small" />
+                                            </IconButton>
+                                            <Typography
+                                              variant="body2"
+                                              style={{ marginLeft: "8px" }}
+                                            >
+                                              {subComment.hateCount}
+                                            </Typography>
+                                            <Box>
+                                              <IconButton
+                                                aria-label="대댓글 옵션"
+                                                aria-controls={`subcomment-menu-${subComment.subCommentId}`}
+                                                aria-haspopup="true"
+                                                onClick={(event) =>
+                                                  handleMenuOpen(
+                                                    event,
+                                                    subComment.subCommentId
+                                                  )
+                                                }
+                                                size="small"
+                                              >
+                                                <MoreVertIcon />
+                                              </IconButton>
+                                              <Menu
+                                                anchorEl={anchorEl}
+                                                open={Boolean(anchorEl)}
+                                                onClose={handleMenuClose}
+                                              >
+                                                {userId ===
+                                                subComment.userId ? (
+                                                  <Box>
+                                                    <MenuItem
+                                                      onClick={() =>
+                                                        clickSubCommentModify(
+                                                          subComment.subCommentId
+                                                        )
+                                                      }
+                                                    >
+                                                      수정
+                                                    </MenuItem>
+                                                    <MenuItem
+                                                      onClick={() =>
+                                                        handleSubCommentDelete(
+                                                          comment.commentId,
+                                                          subComment.subCommentId
+                                                        )
+                                                      }
+                                                    >
+                                                      삭제
+                                                    </MenuItem>
+                                                  </Box>
+                                                ) : (
+                                                  <Box>
+                                                    <MenuItem>
+                                                      신고
+                                                    </MenuItem>
+                                                  </Box>
+                                                )}
+                                              </Menu>
+                                            </Box>
+                                          </Box>
+                                        </Box>
+                                      </Box>
+                                    ) : (
                                       <Box
                                         display="flex"
                                         alignItems="center"
-                                        mt={1}
+                                        justifyContent="space-between"
                                       >
-                                        <IconButton
+                                        <TextField
+                                          label="modify"
+                                          variant="outlined"
+                                          value={subCommentModifyText}
+                                          onChange={(e) =>
+                                            setSubCommentModifyText(e.target.value)
+                                          }
+                                          autoComplete="off"
+                                          fullWidth
+                                          style={{ marginRight: "8px" }}
+                                        />
+                                        <Button
+                                          variant="contained"
+                                          color="primary"
                                           onClick={() =>
-                                            handleSubCommentLike(subComment)
+                                            handleSubCommentModifyed(comment.commentId)
                                           }
-                                          color={
-                                            subComment.isLike
-                                              ? "primary"
-                                              : "default"
-                                          }
-                                          size="small"
-                                        >
-                                          <ThumbUpIcon fontSize="small" />
-                                        </IconButton>
-                                        <Typography
-                                          variant="body2"
                                           style={{ marginRight: "8px" }}
                                         >
-                                          {subComment.likeCount}
-                                        </Typography>
-                                        <IconButton
-                                          onClick={() =>
-                                            handleSubCommentHate(subComment)
-                                          }
-                                          color={
-                                            subComment.isHate
-                                              ? "secondary"
-                                              : "default"
-                                          }
-                                          size="small"
+                                          수정
+                                        </Button>
+                                        <Button
+                                          variant="contained"
+                                          color="secondary"
+                                          onClick={cancelModifyedSubComment}
                                         >
-                                          <ThumbDownIcon fontSize="small" />
-                                        </IconButton>
-                                        <Typography
-                                          variant="body2"
-                                          style={{ marginLeft: "8px" }}
-                                        >
-                                          {subComment.hateCount}
-                                        </Typography>
+                                          취소
+                                        </Button>
                                       </Box>
-                                    </Box>
+                                    )}
                                   </Box>
                                 )
                               )}
                             </Box>
                           </Collapse>
+                          {/* 대댓글 섹션 끝 */}
                         </>
                       )}
                     </Box>
