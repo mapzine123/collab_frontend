@@ -9,6 +9,7 @@ import WriteArticle from "./pages/WriteArticle";
 import MyPage from "./pages/MyPage";
 import { usePersistedStore } from "./redux/store/store";
 import ContentView from "./pages/ContentView";
+import TodoList from "./pages/TodoList";
 
 const darkTheme = createTheme({
   palette: {
@@ -37,6 +38,7 @@ function App() {
           <Route path="/write" element={<WriteArticle />} />
           <Route path="/myPage" element={<MyPage />} />
           <Route path="/contentView" element={<ContentView />} />
+          <Route path="/todoList" element={<TodoList />} />
         </Routes>
       </Router>
     </ThemeProvider>
