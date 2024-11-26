@@ -1,6 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { TextField, Pagination, Box, Container, Button } from "@mui/material";
+import { 
+  TextField, 
+  Pagination, 
+  Box, 
+  Container, 
+  Button,
+  InputAdornment,
+  Typography
+} from "@mui/material";
+import { Search, Edit } from "@mui/icons-material";
 import ky from "ky";
 import { useStore } from "../redux/store/store";
 import ArticleList from "../components/ArticleList";
@@ -61,67 +70,102 @@ const Main = () => {
   }, [currentPage]);
 
   return (
-    <Container maxWidth="md" style={{ marginTop: "20px", display: "flex" }}>
-      {/* Main Content */}
-      <ArticleList posts={posts} setPosts={setPosts} />
-
-      {/* Right Sidebar */}
-      <Box
-        style={{
-          position: "fixed",
-          right: "10%",
-          top: "50%",
-          width: "20%",
-          zIndex: 1000,
-          padding: "10px",
-          boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
+    <Box sx={{ bgcolor: '#FAFAFA', minHeight: '100vh' }}>
+      <Container 
+        maxWidth="md" 
+        sx={{
+          pt: 5,
+          pb: 8,
+          px: { xs: 2, sm: 3 },
         }}
       >
-        <Box
-          display="flex"
-          alignItems="center"
-          justifyContent="space-between"
-          style={{ marginBottom: "20px", width: "100%" }}
+        {/* 상단 검색 및 글쓰기 영역 */}
+        <Box 
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: 2,
+            mb: 4,
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}
         >
+          {/* 검색 영역 */}
           <TextField
-            label="Search"
-            variant="outlined"
+            size="small"
+            placeholder="검색어를 입력하세요"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            fullWidth
-            style={{ marginBottom: "10px" }}
-            autoComplete="off"
+            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+            sx={{
+              width: { xs: '100%', sm: '300px' },
+              bgcolor: 'white',
+              '& .MuiOutlinedInput-root': {
+                '& fieldset': {
+                  borderColor: '#E0E0E0'
+                },
+                '&:hover fieldset': {
+                  borderColor: '#BDBDBD'
+                }
+              }
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search sx={{ color: '#757575' }} />
+                </InputAdornment>
+              ),
+            }}
           />
+
+          {/* 글쓰기 버튼 */}
           <Button
             variant="contained"
-            color="primary"
-            onClick={handleSearch}
-            style={{ marginBottom: "20px", marginLeft: "20px" }}
+            startIcon={<Edit />}
+            onClick={(e) => handleWrite(e, writeMode)}
+            sx={{
+              height: 40,
+              px: 3,
+              bgcolor: '#1976D2',
+              textTransform: 'none',
+              fontWeight: 600,
+              '&:hover': {
+                bgcolor: '#1565C0'
+              }
+            }}
           >
-            검색
+            새 글 작성
           </Button>
         </Box>
 
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={(e) => handleWrite(e, writeMode)}
-          style={{ marginBottom: "20px" }}
+        {/* 게시글 목록 */}
+        <Box sx={{ bgcolor: 'white', borderRadius: 1, overflow: 'hidden' }}>
+          <ArticleList posts={posts} setPosts={setPosts} />
+        </Box>
+
+        {/* 하단 페이지네이션 */}
+        <Box 
+          sx={{ 
+            display: 'flex',
+            justifyContent: 'center',
+            mt: 4
+          }}
         >
-          새 글 작성
-        </Button>
-        <Pagination
-          count={totalPages}
-          page={currentPage}
-          onChange={handlePageChange}
-          variant="outlined"
-          color="primary"
-        />
-      </Box>
-    </Container>
+          <Pagination
+            count={totalPages}
+            page={currentPage}
+            onChange={handlePageChange}
+            color="primary"
+            size="large"
+            sx={{
+              '& .MuiPaginationItem-root': {
+                color: '#424242'
+              }
+            }}
+          />
+        </Box>
+      </Container>
+    </Box>
   );
 };
 

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Container, Typography, TextField, Button, Box } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import { Container, Typography, TextField, Button, Box, Paper } from "@mui/material";
+import { LoginOutlined } from '@mui/icons-material';
+import { useNavigate, Link } from "react-router-dom";
 import ky from "ky";
 import { useStore } from "../redux/store/store";
 import { authPath } from "../util/constant";
@@ -29,11 +30,22 @@ const Login = () => {
         json: { id, password },
       });
 
-      const userData = await response.json();
-      // Redux 상태에 사용자 정보 저장
+      const data = await response.json();
+      const token = data.token;
+      const userData = data.user;
+
+      console.dir(userData);
+
+      localStorage.setItem("jwt", token);
+      
+      // zustand 상태에 사용자 정보 저장
+      
       setUserId(userData.id);
       setAuthenticated(true);
       setUserImagePath(userData.profileImagePath);
+
+      console.log(userId)
+      
 
       // 로그인 성공 시 index.js로 이동
       navigate("/");
@@ -45,68 +57,163 @@ const Login = () => {
   return (
     <Box
       sx={{
-        height: "90vh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        overflow: "hidden",
+        minHeight: 'calc(100vh - 65px)',
+        display: 'flex',
+        alignItems: 'center',
+        bgcolor: '#FAFAFA',
+        py: 8
       }}
     >
       <Container maxWidth="sm">
-        <Typography
-          variant="h4"
-          gutterBottom
+        <Paper
+          elevation={0}
           sx={{
-            color: "#90caf9",
-            textAlign: "center",
-            fontWeight: "bold",
+            p: { xs: 3, sm: 6 },
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'divider',
+            bgcolor: 'white'
           }}
         >
-          로그인
-        </Typography>
-        <form onSubmit={handleSubmit}>
+          {/* 로고 영역 */}
+          <Box sx={{ textAlign: 'center', mb: 4 }}>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 700,
+                color: '#1976D2',
+                mb: 1
+              }}
+            >
+              Welcome Back
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ color: '#666' }}
+            >
+              서비스를 이용하시려면 로그인해주세요
+            </Typography>
+          </Box>
+
+          <form onSubmit={handleSubmit}>
           <TextField
-            variant="outlined"
-            margin="normal"
-            required
-            fullWidth
-            id="id"
-            label="사용자 이름"
-            name="id"
-            autoFocus
-            value={id}
-            onChange={handleChange}
-            autoComplete="off"
-          />
-          <TextField
-            variant="outlined"
-            margin="normal"
-            required
-            fullWidth
-            id="password"
-            label="비밀번호"
-            name="password"
-            type="password"
-            value={password}
-            onChange={handleChange}
-            autoComplete="off"
-          />
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            color="primary"
-            sx={{ mt: 2 }}
-          >
-            로그인
-          </Button>
-        </form>
-        {wrongInfo && (
-          <Typography variant="body2" color="error" sx={{ mt: 1 }}>
-            아이디 혹은 비밀번호가 일치하지 않습니다.
-          </Typography>
-        )}
+              variant="outlined"
+              margin="normal"
+              required
+              fullWidth
+              id="id"
+              label="아이디"
+              name="id"
+              autoFocus
+              value={id}
+              onChange={handleChange}
+              autoComplete="off"
+              sx={{
+                mb: 2,
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': {
+                    borderColor: '#E0E0E0'
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#BDBDBD'
+                  }
+                },
+                '& .MuiInputBase-input': {  // 입력 텍스트 색상
+                  color: '#333'
+                },
+                '& .MuiInputLabel-root': {  // placeholder(label) 색상
+                  color: '#666'
+                },
+                '& .MuiInputLabel-root.Mui-focused': {  // 포커스시 label 색상
+                  color: '#1976D2'
+                }
+              }}
+            />
+            <TextField
+              variant="outlined"
+              required
+              fullWidth
+              id="password"
+              label="비밀번호"
+              name="password"
+              type="password"
+              value={password}
+              onChange={handleChange}
+              autoComplete="off"
+              sx={{
+                mb: 3,
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': {
+                    borderColor: '#E0E0E0'
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#BDBDBD'
+                  }
+                },
+                '& .MuiInputBase-input': {  
+                  color: '#333'  // 입력 텍스트 색상
+                },
+                '& .MuiInputLabel-root': {  
+                  color: '#666'  // placeholder 색상
+                },
+                '& .MuiInputLabel-root.Mui-focused': {  
+                  color: '#1976D2'  // 포커스시 label 색상
+                }
+              }}
+            />
+            
+            {wrongInfo && (
+              <Typography 
+                variant="body2" 
+                color="error" 
+                sx={{ 
+                  mb: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1
+                }}
+              >
+                아이디 혹은 비밀번호가 일치하지 않습니다.
+              </Typography>
+            )}
+
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              size="large"
+              startIcon={<LoginOutlined />}
+              sx={{
+                py: 1.5,
+                bgcolor: '#1976D2',
+                textTransform: 'none',
+                fontWeight: 600,
+                '&:hover': {
+                  bgcolor: '#1565C0'
+                }
+              }}
+            >
+              로그인
+            </Button>
+          </form>
+
+          {/* 회원가입 링크 */}
+          <Box sx={{ mt: 3, textAlign: 'center' }}>
+            <Typography variant="body2" sx={{ color: '#666' }}>
+              계정이 없으신가요?{' '}
+              <Link 
+                to="/signup" 
+                style={{ 
+                  color: '#1976D2', 
+                  textDecoration: 'none',
+                  fontWeight: 500
+                }}
+              >
+                회원가입
+              </Link>
+            </Typography>
+          </Box>
+        </Paper>
       </Container>
     </Box>
   );

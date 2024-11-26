@@ -177,143 +177,177 @@ const ArticleList = ({ posts, setPosts }) => {
   };
 
   return (
-    <Box style={{ flex: 1, marginRight: "300px" }}>
+    <Box sx={{ width: '100%', maxWidth: '800px' }}>
       {posts.length !== 0 && (
-        <List>
+        <List sx={{ width: '100%', p: 0 }}>
           {posts.map((post) => (
             <Card
               key={post.articleNum}
-              variant="outlined"
-              style={{ marginBottom: "10px", width: "130%" }}
+              elevation={0}
+              sx={{
+                mb: 3,
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 2,
+                bgcolor: 'background.paper',
+                '&:hover': {
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                }
+              }}
             >
-              <CardContent>
-                <ListItem>
-                  <Box
-                    display="flex"
-                    flexDirection="row"
-                    alignItems="center"
-                    justifyContent="space-between"
-                    style={{ width: "100%" }}
-                  >
-                    <Box
-                      display="flex"
-                      alignItems="center"
-                      style={{ marginBottom: "8px" }}
-                    >
-                      <Avatar
-                        alt={post.userId}
-                        src={post.profileImage}
-                        style={{ marginRight: "10px" }}
-                      />
-                      <Typography variant="body1" component="div">
-                        {post.articleWriter}
-                      </Typography>
-                    </Box>
-                    {post.articleWriter === userId && (
-                      <Box>
-                        <Button
-                          id="basic-button"
-                          aria-controls={open ? "basic-menu" : undefined}
-                          aria-haspopup="true"
-                          aria-expanded={open ? "true" : undefined}
-                          onClick={(e) => handleClick(e, post.articleNum)} // Handle click
-                        >
-                          <Typography variant="h4" color="textSecondary">
-                            ⁞
-                          </Typography>
-                        </Button>
-                        <Menu
-                          id="basic-menu"
-                          anchorEl={anchorEl}
-                          open={open}
-                          onClose={handleClose}
-                          MenuListProps={{
-                            "aria-labelledby": "basic-button",
-                          }}
-                        >
-                          <MenuItem
-                            onClick={(e) =>
-                              handleModify(
-                                e,
-                                post.articleNum,
-                                post.articleTitle,
-                                post.articleContent,
-                                modifyMode
-                              )
-                            }
-                          >
-                            Modify
-                          </MenuItem>
-                          <MenuItem onClick={handleDelete}>Delete</MenuItem>
-                        </Menu>
-                      </Box>
-                    )}
+              <CardContent sx={{ p: 3 }}>
+                {/* 작성자 정보 영역 */}
+                <Box sx={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  mb: 2 
+                }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Avatar
+                      alt={post.userId}
+                      src={post.profileImage}
+                      sx={{ width: 40, height: 40 }}
+                    />
+                    <Typography sx={{ fontWeight: 500, color: '#333' }}>
+                      {post.articleWriter}
+                    </Typography>
                   </Box>
-                </ListItem>
-                <ListItem>
-                  <ListItemText
-                    onClick={(e) => handleContentView(e, post)}
-                    primary={
-                      <Typography variant="h6" component="div">
-                        {post.articleTitle}
-                      </Typography>
-                    }
-                    secondary={
-                      <Typography variant="body2" color="textSecondary">
-                        {post.articleContent.length > 100
-                          ? post.articleContent.substring(0, 100) + "..."
-                          : post.articleContent}
-                      </Typography>
-                    }
-                    style={{
-                      cursor: "pointer",
-                      borderRadius: "12px",
-                      padding: "6px",
+ 
+                  {post.articleWriter === userId && (
+                    <Box>
+                      <Button
+                        onClick={(e) => handleClick(e, post.articleNum)}
+                        sx={{ minWidth: 'auto', color: '#666' }}
+                      >
+                        ⁝
+                      </Button>
+                      <Menu
+                        anchorEl={anchorEl}
+                        open={open}
+                        onClose={handleClose}
+                        elevation={2}
+                        sx={{
+                          '& .MuiPaper-root': {
+                            borderRadius: 2,
+                            minWidth: 120,
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                          }
+                        }}
+                      >
+                        <MenuItem onClick={(e) => handleModify(e, post.articleNum, post.articleTitle, post.articleContent, modifyMode)}>
+                          수정하기
+                        </MenuItem>
+                        <MenuItem onClick={handleDelete} sx={{ color: '#d32f2f' }}>
+                          삭제하기
+                        </MenuItem>
+                      </Menu>
+                    </Box>
+                  )}
+                </Box>
+ 
+                {/* 게시글 내용 */}
+                <Box 
+                  onClick={(e) => handleContentView(e, post)}
+                  sx={{ 
+                    cursor: 'pointer',
+                    '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
+                    p: 2,
+                    borderRadius: 1
+                  }}
+                >
+                  <Typography 
+                    variant="h6" 
+                    sx={{ 
+                      fontSize: '1.1rem',
+                      fontWeight: 600,
+                      mb: 1,
+                      color: '#1a1a1a'
                     }}
-                  />
-                </ListItem>
-                <Typography
-                  variant="body2"
-                  color="textSecondary"
-                  style={{ marginTop: "8px" }}
+                  >
+                    {post.articleTitle}
+                  </Typography>
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      color: '#666',
+                      lineHeight: 1.6 
+                    }}
+                  >
+                    {post.articleContent.length > 100
+                      ? post.articleContent.substring(0, 100) + "..."
+                      : post.articleContent}
+                  </Typography>
+                </Box>
+ 
+                {/* 메타 정보 */}
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    color: '#999',
+                    mt: 2,
+                    mb: 2,
+                    fontSize: '0.875rem'
+                  }}
                 >
-                  Created: {new Date(post.createdAt).toLocaleDateString()} |
-                  Views: {post.viewCount}
+                  {new Date(post.createdAt).toLocaleDateString()} • 조회 {post.viewCount}
                 </Typography>
-
-                {/* Like and Dislike buttons */}
-                <Box
-                  display="flex"
-                  flexDirection="row"
-                  alignItems="center"
-                  justifyContent="flex-start"
-                  style={{ marginTop: "8px" }}
-                >
+ 
+                {/* 액션 버튼 */}
+                <Box sx={{ 
+                  display: 'flex',
+                  gap: 1,
+                  mt: 2,
+                  pt: 2,
+                  borderTop: '1px solid',
+                  borderColor: 'divider'
+                }}>
                   <Button
                     onClick={(e) => handleLike(e, post)}
-                    style={{
-                      backgroundColor: post.isLike ? "#6a1b9a" : "#424242",
-                      color: post.isLike ? "#ffffff" : "#bdbdbd",
+                    variant={post.isLike ? "contained" : "outlined"}
+                    size="small"
+                    sx={{
+                      borderRadius: 2,
+                      textTransform: 'none',
+                      color: post.isLike ? 'white' : '#666',
+                      bgcolor: post.isLike ? '#1976D2' : 'transparent',
+                      borderColor: '#E0E0E0',
+                      '&:hover': {
+                        bgcolor: post.isLike ? '#1565C0' : 'rgba(0,0,0,0.04)'
+                      }
                     }}
                   >
                     👍 {post.likeCount}
                   </Button>
                   <Button
                     onClick={(e) => handleHate(e, post)}
-                    style={{
-                      backgroundColor: post.isHate ? "#c62828" : "#424242",
-                      color: !post.isHate ? "#bdbdbd" : "",
-                      marginRight: "8px", // 버튼 사이에 여백 추가
-                      marginLeft: "8px",
+                    variant={post.isHate ? "contained" : "outlined"}
+                    size="small"
+                    sx={{
+                      borderRadius: 2,
+                      textTransform: 'none',
+                      color: post.isHate ? 'white' : '#666',
+                      bgcolor: post.isHate ? '#d32f2f' : 'transparent',
+                      borderColor: '#E0E0E0',
+                      '&:hover': {
+                        bgcolor: post.isHate ? '#c62828' : 'rgba(0,0,0,0.04)'
+                      }
                     }}
                   >
                     👎 {post.hateCount}
                   </Button>
                   <Button
                     onClick={(e) => handleComment(e, post)}
-                    style={{
-                      color: "#bdbdbd",
-                      backgroundColor: "#424242",
+                    variant="outlined"
+                    size="small"
+                    sx={{
+                      borderRadius: 2,
+                      textTransform: 'none',
+                      color: '#666',
+                      borderColor: '#E0E0E0',
+                      '&:hover': {
+                        bgcolor: 'rgba(0,0,0,0.04)'
+                      }
                     }}
                   >
                     💬 {post.commentCount}
@@ -326,6 +360,6 @@ const ArticleList = ({ posts, setPosts }) => {
       )}
     </Box>
   );
-};
+ };
 
 export default ArticleList;
