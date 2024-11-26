@@ -1,4 +1,4 @@
-import create from "zustand";
+import { create } from 'zustand';
 import { useEffect } from "react";
 
 const loadFromSessionStorage = (key, defaultValue) => {
