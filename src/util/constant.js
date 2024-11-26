@@ -1,6 +1,23 @@
-export const articlePath = "http://localhost:8080/api/articles";
-export const userPath = "http://localhost:8080/api/users";
-export const authPath = "http://localhost:8080/api/auth";
+export const apiPath = "http://localhost:8080/api"
+export const articlePath = apiPath + "/articles";
+export const userPath = apiPath + "/users";
+export const authPath = apiPath + "/auth";
+export const todoPath = apiPath + "/todos";
 
 export const writeMode = "write";
 export const modifyMode = "modify";
+
+export const API = {
+    BASE: "http://localhost:8080/api",
+    ARTICLES: "/articles",
+    USERS: "/users",
+    AUTH: "/auth",
+    TODOS: "/todos"
+};
+
+export const MODES = {
+    WRITE: "write",
+    MODIFY: "modify"
+};
+
+export const getApiUrl = (endpoint) => `${API.BASE}${endpoint}`;
