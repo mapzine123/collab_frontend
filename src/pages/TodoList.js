@@ -13,11 +13,13 @@ import {
   Typography
   
 } from '@mui/material';
-import { Add, CheckCircle, Delete, Edit } from '@mui/icons-material';
+import { Add, CheckCircle, Delete, Edit, South } from '@mui/icons-material';
 import { useStore } from "../redux/store/store";
 import ky from "ky";
 import { API, getApiUrl } from "../util/constant";
 import { api } from '../api/client';
+import { compose } from 'redux';
+import { current } from '@reduxjs/toolkit';
 
 const ToDoList = () => {
   const [originalTodos, setOriginalTodos] = useState([]);
@@ -32,20 +34,39 @@ const ToDoList = () => {
 
   const { userId, setUserId } = useStore();
 
+
   const MAX_CHANGES = 15;
   
   useEffect(() => {
+    const handleBeforeUnload = () => {
+      const changes = calculateChange(originalTodos, todos);
+      if(changes.updated.length > 0 || changes.deleted.length > 0) {
+        api.post(`${getApiUrl(API.TODOS)}/batch`, {
+          json: changes
+        });
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [todos, originalTodos]);
+
+  useEffect(() => {
+    if(!isLoading && todos.length > 0) {
+      checkAndSaveChanges();
+    }
+  }, [todos]);
+
+  useEffect(() => {
     const fetchTodos = async () => {
       try {
-        const response = await ky.get(`${getApiUrl(API.TODOS)}`, {
-          headers : {
-            'Authorization': `Bearer ${localStorage.getItem('jwt')}`
-          }
-        }).json();
+        const response = await api.get(`${getApiUrl(API.TODOS)}`).json();
 
         setOriginalTodos(response);
         setTodos(response);
-        console.log(response);
       } catch(error){
         console.error(error);
       } finally {
@@ -58,8 +79,9 @@ const ToDoList = () => {
     // 5분마다 변경사항 저장
     const autoSaveInterval = setInterval(async () => {
       const changes = calculateChange(originalTodos, todos);
+      const totalChanges = changes.updated.length + changes.deleted.length;
 
-      if(changes.length > 0) {
+      if(totalChanges > 0) {
         try {
           await api.post(`${getApiUrl(API.TODOS)}`, {
             json: changes
@@ -90,26 +112,23 @@ const ToDoList = () => {
 
   // todo 변경사항 검사 함수
   const calculateChange = (original, current) => {
-    console.log("changeed")
-    const changes = {
-      added: current.filter(todo => !original.find(o => o.id === todo.id)),
-      modifyed: current.filter(todo => {
+    const changes  = {
+      updated: current.filter(todo => {
         const originalTodo = original.find(o => o.id === todo.id);
         return originalTodo && (
-          originalTodo.text !== todo.text ||
+          originalTodo.content !== todo.content ||
           originalTodo.completed !== todo.completed
         );
       }),
       deleted: original.filter(todo => !current.find(c => c.id === todo.id))
     };
-
     return changes;
   }
 
   // 변경 사항이 쌓일 때 마다 체크
   const checkAndSaveChanges = async () => {
     const changes = calculateChange(originalTodos, todos);
-    const totalChanges = changes.added.length + changes.modifyed.length + changes.deleted.length;
+    const totalChanges = changes.updated.length + changes.deleted.length;
 
     if(totalChanges >= MAX_CHANGES) {
       try {
@@ -125,14 +144,14 @@ const ToDoList = () => {
 
   const handleSaveChanges = async () => {
     const changes = calculateChange(originalTodos, todos);
-    const totalChanges = changes.added.length + changes.modifyed.length + changes.deleted.length;
+    const totalChanges = changes.updated.length + changes.deleted.length;
 
     if(totalChanges > 0) {
       try {
-        await api.post(`${getApiUrl(API.TODOS)}`, {
+        await api.post(`${getApiUrl(API.TODOS)}/batch`, {
           json: changes
         });
-        setOriginalTodos(todos);
+        setOriginalTodos([...todos]); // 여기서만 업데이트
         alert("변경사항이 저장되었습니다.");
       } catch(error) {
         console.error('Failed to save Changes : ', error);
@@ -142,15 +161,29 @@ const ToDoList = () => {
     }
   }
 
-  const handleAddTodo = () => {
+  const handleAddTodo = async () => {
     if(input.trim() === '') {
       alert("할 일을 입력해주세요!");
       return;
     }
 
-    setTodos([...todos, {content: input, completed: false}]);
-    setInput('');
-    checkAndSaveChanges();
+    const newTodo = {
+      content: input,
+      completed: false
+    };
+
+    try {
+      const savedTodo = await api.post(`${getApiUrl(API.TODOS)}`, {
+        json: newTodo
+      }).json();
+
+      setTodos(currentTodos => [...currentTodos, savedTodo]);
+      setOriginalTodos(currentOriginalTodos => [...currentOriginalTodos, savedTodo]);
+      setInput('');
+
+    } catch(error) {
+      console.error(error);
+    }
   }
 
   // 완료 / 미완료 필터링
@@ -174,67 +207,88 @@ const ToDoList = () => {
 
   // 완료 / 미완료 토글
   const handleToggleComplete = (index) => {
-    const updatedTodos = [...todos];
-    updatedTodos[index].completed = !updatedTodos[index].completed;
+    const updatedTodos = todos.map((todo, i) => {
+      if(i === index) {
+        const updated = {...todo, completed: !todo.completed};
+        return updated;
+      }
+      return {...todo};
+    });
     setTodos(updatedTodos);
-    checkAndSaveChanges();
   }
 
   // 수정 시작
   const handleStartEdit = (todo, index) => {
     setEditingId(index);
-    setEditText(todo.text);
+    setEditText(todo.content);
   }
 
   // 수정 완료
   const handleFinishEdit = (index) => {
-    const updatedTodos = [...todos];
-    updatedTodos[index].text = editText;
+    const updatedTodos = todos.map((todo, i) => {
+      if(i === index) {
+        const updated = {...todo, content: editText};
+        return updated;
+      }
+      return {...todo};
+    });
+
     setTodos(updatedTodos);
     setEditingId(null);
     setEditText('');
-    checkAndSaveChanges();
   }
 
   return (
     <Box sx={{
-      maxWidth: 480,
+      maxWidth: 700,
       margin: '50px auto',
-      padding: '20px',
-      borderRadius: '8px',
-      boxShadow: '0 4px 10px rgba(0, 0, 0, .8)',
-      backgroundColor: '#1E1E1E',
-      color: '#E0E0E0'
+      padding: '32px',
+      borderRadius: '16px',
+      backgroundColor: 'white',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+      border: '1px solid',
+      borderColor: '#f0f0f0'
     }}>
       <Box
         sx={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: 2
+          marginBottom: 4
         }}
       >
-        <Typography>
+        <Typography
+          sx={{
+            fontSize: '1.5rem',
+            fontWeight: 600,
+            color: '#1976D2'
+          }}
+        >
           📝 To-Do list
         </Typography>
         <Button
           onClick={handleSaveChanges}
           variant='contained'
           sx={{
-            backgroundColor: '#4caf50',
+            bgcolor: '#1976D2',
+            textTransform: 'none',
+            fontWeight: 500,
+            borderRadius: 2,
+            px: 3,
             '&:hover': {
-              backgroundColor: '#45a049'
+              bgcolor: '#1565C0'
             }
           }}
         >
           저장
         </Button>
       </Box>
-
-      
+ 
       {/* 입력 필드 */}
       <Box sx={{
-        display: 'flex', gap: 1
+        display: 'flex',
+        gap: 2,
+        mb: 4
       }}>
         <TextField 
           fullWidth
@@ -243,9 +297,19 @@ const ToDoList = () => {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleAddTodo()}
+          size="small"
           sx={{
-            input: {color: '#E0E0E0'},
-            '& .MuiOutlinedInput-root' : {borderColor: '#444'}
+            '& .MuiOutlinedInput-root': {
+              '& fieldset': {
+                borderColor: '#E0E0E0'
+              },
+              '&:hover fieldset': {
+                borderColor: '#BDBDBD'
+              }
+            },
+            '& .MuiInputBase-input': {
+              color: '#333'
+            }
           }}
         />
         <Button
@@ -253,9 +317,15 @@ const ToDoList = () => {
           variant='contained'
           startIcon={<Add />}
           sx={{
-            flexShrink: 0,
-            backgroundColor: '#3A3A3A',
-            color: '#fff'
+            bgcolor: '#1976D2',
+            textTransform: 'none',
+            borderRadius: 2,
+            px: 3,
+            minWidth: '100px',  // 최소 너비 추가
+            whiteSpace: 'nowrap',  // 텍스트 줄바꿈 방지
+            '&:hover': {
+              bgcolor: '#1565C0'
+            }
           }}
         >
           추가
@@ -265,7 +335,7 @@ const ToDoList = () => {
       {/* 필터 버튼 */}
       <Box
         sx={{
-          marginTop: 2,
+          mb: 4,
           display: 'flex',
           justifyContent: 'center',
           gap: 1
@@ -275,96 +345,132 @@ const ToDoList = () => {
           label="전체"
           onClick={() => setFilter('all')}
           sx={{
-            backgroundColor: filter === 'all' ? '#3A3A3A' : '#2C2C2C',
-            color: '#fff'
+            bgcolor: filter === 'all' ? '#1976D2' : 'transparent',
+            color: filter === 'all' ? 'white' : '#666',
+            border: '1px solid',
+            borderColor: filter === 'all' ? '#1976D2' : '#E0E0E0',
+            '&:hover': {
+              bgcolor: filter === 'all' ? '#1565C0' : 'rgba(0,0,0,0.04)'
+            }
           }}
         />
         <Chip
           label="완료됨"
           onClick={() => setFilter('completed')}
           sx={{
-            backgroundColor: filter === 'completed' ? '#3a3a3a' : '#2c2c2c',
-            color: '#fff'
-          }}  
-          
+            bgcolor: filter === 'completed' ? '#1976D2' : 'transparent',
+            color: filter === 'completed' ? 'white' : '#666',
+            border: '1px solid',
+            borderColor: filter === 'completed' ? '#1976D2' : '#E0E0E0',
+            '&:hover': {
+              bgcolor: filter === 'completed' ? '#1565C0' : 'rgba(0,0,0,0.04)'
+            }
+          }}
         />
         <Chip
           label="미완료"
           onClick={() => setFilter('pending')}
           sx={{
-            backgroundColor: filter === 'pending' ? '#3c3c3c' : '#2c2c2c',
-            color: '#fff'
+            bgcolor: filter === 'pending' ? '#1976D2' : 'transparent',
+            color: filter === 'pending' ? 'white' : '#666',
+            border: '1px solid',
+            borderColor: filter === 'pending' ? '#1976D2' : '#E0E0E0',
+            '&:hover': {
+              bgcolor: filter === 'pending' ? '#1565C0' : 'rgba(0,0,0,0.04)'
+            }
           }}
         />
       </Box>
-
+ 
       {/* To-Do 목록 */}
-      <List>
+      <List sx={{ px: 0 }}>
           {isLoading ? (
-            <Box 
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  padding: 2
-                }}
-              >
-                <CircularProgress />
-              </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+              <CircularProgress sx={{ color: '#1976D2' }} />
+            </Box>
           ) : (
           filteredTodos.length === 0 ? (
-            <Typography>
+            <Typography sx={{ textAlign: 'center', color: '#666' }}>
               할 일이 없습니다.
             </Typography>
           ) : (
             filteredTodos.map((todo, index) => (
               <ListItem
                 key={index}
+                onClick={(event) => {
+                  // secondaryAction 영역 클릭은 제외
+                  if (!event.target.closest('.MuiListItemSecondaryAction-root')) {
+                    handleToggleComplete(index);
+                  }
+              }}
                 sx={{
-                  backgroundColor: '#2a2a2a',
-                  marginBottom: 1,
-                  borderRadius: '8px',
-                  boxShadow: '0 2px, 5px rgba(0, 0, 0, 0, .5)'
+                  mb: 1,
+                  borderRadius: 2,
+                  border: '1px solid',
+                  borderColor: '#f0f0f0',
+                  cursor: 'pointer',
+                  bgcolor: 'white',
+                  '&:hover': {
+                    bgcolor: 'rgba(0,0,0,0.02)'
+                  }
                 }}
-                secondaryAction= {
+                secondaryAction={
                   <Box>
                     {editingId === index ? (
                       <IconButton onClick={() => handleFinishEdit(index)}>
-                        <CheckCircle sx={{color: '#4caf50'}} />
+                        <CheckCircle sx={{color: '#4CAF50'}} />
                       </IconButton>
                     ) : (
                       <IconButton onClick={() => handleStartEdit(todo, index)}>
-                        <Edit sx={{color: '#90caf9'}} />
+                        <Edit sx={{color: '#1976D2'}} />
                       </IconButton>
                     )}
-                    <IconButton edge="end" aria-label='delete' onClick={() => handleDelete(index)}>
-                      <Delete sx={{color: '#e57373'}} />
+                    <IconButton onClick={() => handleDelete(index)}>
+                      <Delete sx={{color: '#F44336'}} />
                     </IconButton>
                   </Box>
                 }
               >
                 <Checkbox 
-                  checked={todos.completed}
+                  checked={todo.completed}
                   onChange={() => handleToggleComplete(index)}
-                  sx={{color: '#81c784', '&.Mui-checked': {color: '#4caf50'}}}
+                  sx={{
+                    color: '#BDBDBD',
+                    '&.Mui-checked': {
+                      color: '#4CAF50'
+                    }
+                  }}
                 />
                 {editingId === index ? (
                   <TextField
-                  fullWidth
-                  value={editText}
-                  onChange={(e) => setEditText(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleFinishEdit(index)}
-                  autoFocus
-                  sx={{
-                    input: {color: '#E0E0E0'},
-                    '& .MuiOutlinedInput-root': {borderColor: '#444'}
-                  }}
+                    fullWidth
+                    value={editText}
+                    onChange={(e) => setEditText(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleFinishEdit(index)}
+                    autoFocus
+                    size="small"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        '& fieldset': {
+                          borderColor: '#E0E0E0'
+                        },
+                        '&:hover fieldset': {
+                          borderColor: '#BDBDBD'
+                        }
+                      },
+                      '& .MuiInputBase-input': {
+                        color: '#333'
+                      }
+                    }}
                   />
                 ) : (
                   <ListItemText
                     primary={todo.content}
                     sx={{
-                      textDecoration: todo.completed ? 'line-through' : 'none',
-                      color: todo.completed ? '#888' : '#e0e0e0',
+                      '& .MuiTypography-root': {
+                        textDecoration: todo.completed ? 'line-through' : 'none',
+                        color: todo.completed ? '#9E9E9E' : '#333'
+                      }
                     }}
                   />
                 )}
@@ -373,6 +479,6 @@ const ToDoList = () => {
       </List>
     </Box>
   );
-};
+}
 
 export default ToDoList;
