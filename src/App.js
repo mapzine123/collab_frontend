@@ -10,6 +10,7 @@ import MyPage from "./pages/MyPage";
 import { usePersistedStore } from "./redux/store/store";
 import ContentView from "./pages/ContentView";
 import TodoList from "./pages/TodoList";
+import ChatMain from "./pages/ChatMain";
 
 const lightTheme = createTheme({
  palette: {
@@ -84,6 +85,7 @@ function App() {
          <Route path="/myPage" element={<MyPage />} />
          <Route path="/contentView" element={<ContentView />} />
          <Route path="/todoList" element={<TodoList />} />
+         <Route path="/chat" element={<ChatMain />} />
        </Routes>
      </Router>
    </ThemeProvider>

@@ -71,6 +71,19 @@ export default function Menubar() {
             >
               Todo List
             </Button>
+
+            <Button 
+              component={Link} 
+              to="/chat"
+              sx={{ 
+                color: '#666',
+                textTransform: 'none',
+                fontWeight: 500,
+                '&:hover': { color: '#1976D2' }
+              }}
+            >
+              Chatting
+            </Button>
           </Box>
 
           {/* 오른쪽: 인증 관련 버튼 */}
