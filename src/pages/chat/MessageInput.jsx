@@ -3,17 +3,39 @@ import { Box, IconButton, TextField } from "@mui/material";
 import { useState } from "react"
 import EmojiEmotionsIcon from '@mui/icons-material/EmojiEmotions';
 import SendIcon from '@mui/icons-material/Send';
+import {useSnackbar} from 'notistack';
+import { sendMessage } from "./chatApi";
+import { useStore } from "../../redux/store/store";
 
-const MessageInput = () => {
+const MessageInput = ({roomId, onSendMessage}) => {
     const [message, setMessage] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const {enqueueSnackbar} = useSnackbar();
 
-    const handleSubmit = () => {
+    const handleSubmit = (e) => {
+        e.preventDefault();
 
+        console.log('보낸 메시지 : ', message);
+        if(!message.trim() || !roomId) {
+            return;
+        }
+
+        setIsLoading(true);
+
+        try {
+            onSendMessage(message);
+            setMessage('');
+        } catch(error) {
+            console.error('메시지 전송 실패:', error);
+            enqueueSnackbar('메시지 전송에 실패했습니다.', {variant: 'error'});
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     return (
         <Box
-            component="from"
+            component="form"
             onSubmit={handleSubmit}
             sx={{
                 p: 2,
@@ -42,6 +64,12 @@ const MessageInput = () => {
                     placeholder="Message"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
+                    onKeyPress={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSubmit(e);
+                        }
+                    }}
                     sx={{
                         '& .MuiOutlinedInput-root': {
                             backgroundColor: '#fff'
@@ -51,7 +79,7 @@ const MessageInput = () => {
                 <IconButton
                     color="primary"
                     type="submit"
-                    disabled={!message.trim()}
+                    disabled={!message.trim() || isLoading}
                 >
                     <SendIcon />
                 </IconButton>

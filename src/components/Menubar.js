@@ -10,6 +10,8 @@ export default function Menubar() {
   const { authenticated, setAuthenticated } = useStore();
   const { userImagePath, setUserImagePath } = useStore();
 
+
+  
   const handleLogout = () => {
     setUserId(null);
     setAuthenticated(false);

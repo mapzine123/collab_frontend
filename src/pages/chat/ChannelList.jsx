@@ -17,23 +17,28 @@ const ChannelList = ({channels, setChannels, currentChannel, setCurrentChannel})
     const token = localStorage.getItem('jwt'); 
 
     useEffect(() => {
+        let isSubscribed = true;
         // 포함되어있는 채팅방 목록 불러오기
         const fetchChatRooms = async () => {
+            if(!token) {
+                return;
+            }
             try {
                 const response = await api.get('chat/rooms', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                }).json();
-
+                    timeout: 5000
+                });
+                const responseData = await response.json();
+                
                 // 응답 데이터를 channels 형식에 맞게 변환
-                const formattedChannels = response.map(room => ({
-                    id: room.id,
-                    name: room.name
-                }));
+                if(isSubscribed) {
+                    const formattedChannels = responseData.map(room => ({
+                        id: room.id,
+                        name: room.name
+                    }));
+    
+                    setChannels(formattedChannels);
+                }
 
-                setChannels(formattedChannels);
 
             } catch(error) {
                 console.error("채팅방 목록 조회 실패:", error);
@@ -49,7 +54,7 @@ const ChannelList = ({channels, setChannels, currentChannel, setCurrentChannel})
         }
 
         fetchChatRooms();
-    }, [token]);
+    }, [token, setChannels]);
 
     const handleCreateChannel = async () => {
         if(newChannelName.trim()) {
