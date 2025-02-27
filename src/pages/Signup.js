@@ -1,85 +1,128 @@
-import React, { useState } from "react";
-import { Box, Button, Container, TextField, Typography, Paper } from "@mui/material";
 import { PersonAddOutlined } from '@mui/icons-material';
-import { Link } from "react-router-dom";
+import { Box, Button, Container, FormControl, InputLabel, MenuItem, Paper, Select, Stack, TextField, Typography } from "@mui/material";
 import ky from "ky";
-import { validatePassword } from "../util/validator";
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { API, getApiUrl } from "../util/constant";
-import { useNavigate } from "react-router-dom";
+import { validatePassword } from "../util/validator";
 
 const Signup = () => {
-  const [id, setId] = useState("");
-  const [password, setPassword] = useState("");
-  const [passwordCheck, setPasswordCheck] = useState("");
-  const [user, setUser] = useState(null);
   const [idErrorMessage, setIdErrorMessage] = useState("");
-  const [passwordErrorMessage, setPasswordErrorMessage] = useState("");
   const navigate = useNavigate();
+
+  const [formData, setFormData] = useState({
+    id: "",
+    password: "",
+    passwordCheck: "",
+    name: "",
+    department: ""
+  })
+
+  const [errors, setErrors] = useState({
+    id: "",
+    password: "",
+    name: "",
+    department: ""
+  })
+
+  const DEPARTMENTS = [
+    { id: 'dev', name: '개발팀' },
+    { id: 'design', name: '디자인팀' },
+    { id: 'marketing', name: '마케팅팀' },
+    { id: 'sales', name: '영업팀' },
+    { id: 'hr', name: '인사팀' },
+    { id: 'finance', name: '재무팀' }
+  ];
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    if (name === "id") setId(value);
-    if (name === "password") setPassword(value);
-    if (name === "password_check") setPasswordCheck(value);
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+
+    setErrors(prev => ({
+      ...prev,
+      [name]: ""
+    }));
   };
+
+
+  
+  const validateForm = () => {
+    let isValid = true;
+    const newErrors = {};
+
+    // ID 검증
+    const idRegex = /^[a-zA-Z0-9]{3,12}$/;
+    if(!idRegex.test(formData.id)) {
+      newErrors.id = "아이디는 3 ~ 12 글자의 영문자 또는 숫자로 구성되어야 합니다.";
+      isValid = false;
+    }
+
+    if(!validatePassword(formData.password)) {
+      newErrors.password = "비밀번호는 4~16자로 설정해주세요.";
+      isValid = false;
+    }
+
+    // 실명 검증
+    if(!formData.name.trim()) {
+      newErrors.name = "이름을 입력해주세요.";
+      isValid = false;
+    }
+
+    // 부서 검증
+    if(!formData.department.trim()) {
+      newErrors.department = "부서를 입력해주세요.";
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+
+  }
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const idRegex = /^[a-zA-Z0-9]{3,12}$/;
-    if (!idRegex.test(id)) {
-      setIdErrorMessage(
-        "아이디는 3글자 이상 12글자 이하의 영문자 또는 숫자로 구성되어야 합니다."
-      );
+    if(!validateForm()) {
       return;
-    } else {
-      setIdErrorMessage("");
-    }
-
-    if (!validatePassword(password)) {
-      setPasswordErrorMessage(
-        "비밀번호는 4글자 이상 16글자 이하로 설정해주세요."
-      );
-      return;
-    } else {
-      setPasswordErrorMessage("");
-    }
-
-    if (password !== passwordCheck) {
-      setPasswordErrorMessage("비밀번호가 일치하지 않습니다.");
-      return;
-    } else {
-      setPasswordErrorMessage("");
     }
 
     try {
-      const data = { id, password };
       const response = await ky.post(getApiUrl(API.USERS), {
-        json: {id, password}, 
-        headers: {
-          "Content-Type": "application/json",
-        },
+        json: {
+          id: formData.id,
+          password: formData.password,
+          name: formData.name,
+          department: formData.department
+        }
     });
-      setUser(await response.json());
-      alert("회원가입이 완료되었습니다!");
 
+      alert("회원가입이 완료되었습니다!");
       navigate("/login");
     } catch (error) {
-      setUser(null);
-      setPasswordErrorMessage("중복된 아이디입니다.");
+      setErrors(prev => ({
+        ...prev,
+        id: "중복된 아이디입니다."
+      }));
     }
   };
 
+
+  // 모든 TextField에 공통으로 적용될 스타일
+  const textFieldSx = {
+    '& .MuiOutlinedInput-root': {
+      '& fieldset': { borderColor: '#E0E0E0' },
+      '&:hover fieldset': { borderColor: '#BDBDBD' }
+    },
+    '& .MuiInputBase-input': { color: '#333' },
+    '& .MuiInputLabel-root': { color: '#666' },
+    '& .MuiInputLabel-root.Mui-focused': { color: '#1976D2' }
+  };
+
   return (
-    <Box
-      sx={{
-        minHeight: 'calc(100vh - 65px)',
-        display: 'flex',
-        alignItems: 'center',
-        bgcolor: '#FAFAFA',
-        py: 8
-      }}
-    >
+    <Box sx={{ minHeight: 'calc(100vh - 65px)', display: 'flex', alignItems: 'center', bgcolor: '#FAFAFA', py: 8 }}>
       <Container maxWidth="sm">
         <Paper
           elevation={0}
@@ -112,142 +155,112 @@ const Signup = () => {
           </Box>
  
           <form onSubmit={handleSubmit}>
-            <TextField
-              variant="outlined"
-              required
-              fullWidth
-              id="id"
-              label="아이디"
-              name="id"
-              autoFocus
-              value={id}
-              onChange={handleChange}
-              autoComplete="off"
-              sx={{
-                mb: idErrorMessage ? 1 : 2,
-                '& .MuiOutlinedInput-root': {
-                  '& fieldset': {
-                    borderColor: '#E0E0E0'
-                  },
-                  '&:hover fieldset': {
-                    borderColor: '#BDBDBD'
+            <Stack spacing={2}>
+              <TextField
+                variant="outlined"
+                id="id"
+                label="아이디"
+                name="id"
+                value={formData.id}
+                onChange={handleChange}
+                error={!!errors.id}
+                helperText={errors.id}
+                autoComplete="off"
+                required
+                fullWidth
+                autoFocus
+                sx={textFieldSx}
+              />
+              {idErrorMessage && (
+                <Typography
+                  variant="body2"
+                  color="error"
+                  sx={{ mb: 2 }}
+                >
+                  {idErrorMessage}
+                </Typography>
+              )}
+                <TextField
+                  name="name"
+                  label="이름"
+                  value={formData.name}
+                  onChange={handleChange}
+                  autoComplete="off"
+                  error={!!errors.name}
+                  helperText={errors.name}
+                  required
+                  fullWidth
+                  sx={textFieldSx}
+                  
+                />
+
+                <FormControl
+                  required
+                  error={!!errors.department}
+                  sx={textFieldSx}
+                >
+                  <InputLabel id="department-label">부서</InputLabel>
+                  <Select
+                    lebelId="department-label"
+                    name="department"
+                    value={formData.department}
+                    label="부서"
+                    onChange={handleChange}
+                  >
+                    {DEPARTMENTS.map((dept) => (
+                      <MenuItem key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+              <TextField
+                label="비밀번호"
+                name="password"
+                type="password"
+                value={formData.password}
+                onChange={handleChange}
+                error={!!errors.password}
+                helperText={errors.password}
+                autoComplete="off"
+                required
+                fullWidth
+                sx={textFieldSx}
+              />
+              <TextField
+                name="passwordCheck"
+                label="비밀번호 확인"
+                type="password"
+                value={formData.passwordCheck}
+                onChange={handleChange}
+                error={!!errors.passwordCheck}
+                helperText={errors.passwordCheck}
+                required
+                fullWidth
+                sx={textFieldSx}
+              />
+              
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                size="large"
+                startIcon={<PersonAddOutlined />}
+                sx={{
+                  py: 1.5,
+                  bgcolor: '#1976D2',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  '&:hover': {
+                    bgcolor: '#1565C0'
                   }
-                },
-                '& .MuiInputBase-input': {
-                  color: '#333'
-                },
-                '& .MuiInputLabel-root': {
-                  color: '#666'
-                },
-                '& .MuiInputLabel-root.Mui-focused': {
-                  color: '#1976D2'
-                }
-              }}
-            />
-            {idErrorMessage && (
-              <Typography 
-                variant="body2" 
-                color="error" 
-                sx={{ mb: 2 }}
+                }}
               >
-                {idErrorMessage}
-              </Typography>
-            )}
-
-            <TextField
-              variant="outlined"
-              required
-              fullWidth
-              id="password"
-              label="비밀번호"
-              name="password"
-              type="password"
-              value={password}
-              onChange={handleChange}
-              autoComplete="off"
-              sx={{
-                mb: 2,
-                '& .MuiOutlinedInput-root': {
-                  '& fieldset': {
-                    borderColor: '#E0E0E0'
-                  },
-                  '&:hover fieldset': {
-                    borderColor: '#BDBDBD'
-                  }
-                },
-                '& .MuiInputBase-input': {
-                  color: '#333'
-                },
-                '& .MuiInputLabel-root': {
-                  color: '#666'
-                },
-                '& .MuiInputLabel-root.Mui-focused': {
-                  color: '#1976D2'
-                }
-              }}
-            />
-
-            <TextField
-              variant="outlined"
-              required
-              fullWidth
-              id="password_check"
-              label="비밀번호 확인"
-              name="password_check"
-              type="password"
-              value={passwordCheck}
-              onChange={handleChange}
-              autoComplete="off"
-              sx={{
-                mb: passwordErrorMessage ? 1 : 3,
-                '& .MuiOutlinedInput-root': {
-                  '& fieldset': {
-                    borderColor: '#E0E0E0'
-                  },
-                  '&:hover fieldset': {
-                    borderColor: '#BDBDBD'
-                  }
-                },
-                '& .MuiInputBase-input': {
-                  color: '#333'
-                },
-                '& .MuiInputLabel-root': {
-                  color: '#666'
-                },
-                '& .MuiInputLabel-root.Mui-focused': {
-                  color: '#1976D2'
-                }
-              }}
-            />
-            {passwordErrorMessage && (
-              <Typography 
-                variant="body2" 
-                color="error" 
-                sx={{ mb: 3 }}
-              >
-                {passwordErrorMessage}
-              </Typography>
-            )}
-
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              size="large"
-              startIcon={<PersonAddOutlined />}
-              sx={{
-                py: 1.5,
-                bgcolor: '#1976D2',
-                textTransform: 'none',
-                fontWeight: 600,
-                '&:hover': {
-                  bgcolor: '#1565C0'
-                }
-              }}
-            >
-              회원가입
-            </Button>
-            </form>
+                회원가입
+              </Button>
+            </Stack>
+          </form>
  
           {/* 로그인 링크 */}
           <Box sx={{ mt: 3, textAlign: 'center' }}>

@@ -10,6 +10,8 @@ export default function Menubar() {
   const { authenticated, setAuthenticated } = useStore();
   const { userImagePath, setUserImagePath } = useStore();
 
+
+  
   const handleLogout = () => {
     setUserId(null);
     setAuthenticated(false);
@@ -70,6 +72,19 @@ export default function Menubar() {
               }}
             >
               Todo List
+            </Button>
+
+            <Button 
+              component={Link} 
+              to="/chat"
+              sx={{ 
+                color: '#666',
+                textTransform: 'none',
+                fontWeight: 500,
+                '&:hover': { color: '#1976D2' }
+              }}
+            >
+              Chatting
             </Button>
           </Box>
 
