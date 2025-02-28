@@ -13,7 +13,8 @@ export const API = {
     ARTICLES: "/articles",
     USERS: "/users",
     AUTH: "/auth",
-    TODOS: "/todos"
+    TODOS: "/todos",
+    COMMENTS: "/comments"
 };
 
 export const MODES = {
