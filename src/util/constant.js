@@ -3,6 +3,7 @@ export const articlePath = apiPath + "/articles";
 export const userPath = apiPath + "/users";
 export const authPath = apiPath + "/auth";
 export const todoPath = apiPath + "/todos";
+export const commentPath = apiPath + "/comments";
 
 export const writeMode = "write";
 export const modifyMode = "modify";
