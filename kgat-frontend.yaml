@@ -1,0 +1,32 @@
+# kgat-frontend.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kgat-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kgat-frontend
+  template:
+    metadata:
+      labels:
+        app: kgat-frontend
+    spec:
+      containers:
+      - name: kgat-frontend
+        image: 676206900599.dkr.ecr.ap-northeast-2.amazonaws.com/kgat-frontend:latest
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kgat-frontend-svc
+spec:
+  selector:
+    app: kgat-frontend
+  ports:
+  - port: 80
+    targetPort: 80
+  type: ClusterIP
