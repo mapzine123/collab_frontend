@@ -30,11 +30,18 @@ const ContentView = () => {
   const { post } = location.state || {};
   const { userId } = useStore();
 
+// 원본 댓글용 메뉴 관리 상태
+const [commentMenuAnchorEl, setCommentMenuAnchorEl] = useState(null);
+const [currentCommentId, setCurrentCommentId] = useState(null);
+
+// 대댓글용 메뉴 관리 상태
+const [subCommentMenuAnchorEl, setSubCommentMenuAnchorEl] = useState(null);
+const [currentSubCommentId, setCurrentSubCommentId] = useState(null);
+
   const [commentText, setCommentText] = useState("");
   const [modifyText, setModifyText] = useState("");
   const [expandedComments, setExpandedComments] = useState({});
   const [anchorEl, setAnchorEl] = useState(null);
-  const [currentCommentId, setCurrentCommentId] = useState(null);
   const [comments, setComments] = useState([]);
   const [commentCount, setCommentCount] = useState(0);
   const [selectedCommentId, setSelectedCommentId] = useState("");
@@ -200,14 +207,30 @@ const ContentView = () => {
     }));
   };
 
-  const handleClick = (event, commentId) => {
-    setAnchorEl(event.currentTarget);
+  // 원본 댓글 메뉴 열기
+  const handleCommentMenuClick = (event, commentId) => {
+    setCommentMenuAnchorEl(event.currentTarget);
     setCurrentCommentId(commentId);
   };
 
-  const handleClose = () => {
-    setAnchorEl(null);
+  // 원본 댓글 메뉴 닫기
+  const handleCommentMenuClose = () => {
+    setCommentMenuAnchorEl(null);
     setCurrentCommentId(null);
+  };
+
+  // 대댓글 메뉴 열기
+  const handleSubCommentMenuClick = (event, subCommentId, parentCommentId) => {
+    setSubCommentMenuAnchorEl(event.currentTarget);
+    setCurrentSubCommentId(subCommentId);
+    // 부모 댓글 ID도 저장 (대댓글 삭제시 필요)
+    setCurrentCommentId(parentCommentId);
+  };
+
+  // 대댓글 메뉴 닫기
+  const handleSubCommentMenuClose = () => {
+    setSubCommentMenuAnchorEl(null);
+    setCurrentSubCommentId(null);
   };
 
   const handleModify = (e, commentId) => {
@@ -216,8 +239,14 @@ const ContentView = () => {
     handleClose();
   };
 
-  const handleDelete = async (e, commentId) => {
-    // 삭제 로직
+  const handleClose = () => {
+    setAnchorEl(null);
+    setCurrentCommentId(null);
+  };
+
+  // 원본 댓글 삭제 핸들러
+  const handleCommentDelete = async (commentId) => {
+    console.log("handleDelete 실행");
     try {
       const response = await ky.delete(`${commentPath}/${commentId}`, {
         headers: {
@@ -228,12 +257,11 @@ const ContentView = () => {
       if (response.ok) {
         setComments((prevComments) =>
           prevComments.filter(
-            (comment) => comment.commentId !== selectedCommentId
+            (comment) => comment.commentId !== commentId
           )
         );
-
         setCommentCount((prevCount) => prevCount - 1);
-        handleClose();
+        handleCommentMenuClose();
       } else {
         alert("댓글 삭제에 실패했습니다.");
       }
@@ -467,7 +495,8 @@ const ContentView = () => {
   };
 
   // 메뉴 기능
-  const handleMenuOpen = (event) => {
+  const handleMenuOpen = (event, subCommentId) => {
+    setCurrentCommentId(subCommentId);
     setAnchorEl(event.currentTarget);
   };
 
@@ -706,18 +735,15 @@ const ContentView = () => {
                             setReplyComment(comment.commentId); // 상태 업데이트
                           }}
                           sx={{
-                            color: "white",
+                            color: "primary",
                             borderRadius: "16px",
-                            "&:hover": {
-                              backgroundColor: "grey.700",
-                            },
                           }}
                         >
-                          답글
+                          댓글
                         </Button>
                         <IconButton
                           edge="end"
-                          onClick={(e) => handleClick(e, comment.commentId)}
+                          onClick={(e) => handleCommentMenuClick(e, comment.commentId)}
                           size="small"
                           style={{ marginLeft: "auto" }}
                         >
@@ -725,14 +751,11 @@ const ContentView = () => {
                         </IconButton>
 
                         <Menu
-                          anchorEl={anchorEl}
-                          open={
-                            Boolean(anchorEl) &&
-                            currentCommentId === comment.commentId
-                          }
-                          onClose={handleClose}
+                          anchorEl={commentMenuAnchorEl}
+                          open={Boolean(commentMenuAnchorEl) && currentCommentId === comment.commentId}
+                          onClose={handleCommentMenuClose}
                           MenuListProps={{
-                            "aria-labelledby": "basic-button",
+                            "aria-labelledby": "comment-menu-button",
                           }}
                         >
                           {userId === comment.userId ? (
@@ -747,9 +770,7 @@ const ContentView = () => {
                               </MenuItem>,
                               <MenuItem
                                 key="delete"
-                                onClick={(e) =>
-                                  handleDelete(e, comment.commentId)
-                                }
+                                onClick={() => handleCommentDelete(currentCommentId)}
                               >
                                 삭제
                               </MenuItem>,
@@ -923,44 +944,37 @@ const ContentView = () => {
                                               {subComment.hateCount}
                                             </Typography>
                                             <Box>
-                                              <IconButton
-                                                aria-label="대댓글 옵션"
-                                                aria-controls={`subcomment-menu-${subComment.subCommentId}`}
-                                                aria-haspopup="true"
-                                                onClick={(event) =>
-                                                  handleMenuOpen(
-                                                    event,
-                                                    subComment.subCommentId
-                                                  )
-                                                }
-                                                size="small"
-                                              >
+                                            <IconButton
+                                              aria-label="대댓글 옵션"
+                                              aria-controls={`subcomment-menu-${subComment.subCommentId}`}
+                                              aria-haspopup="true"
+                                              onClick={(event) => handleSubCommentMenuClick(
+                                                event, 
+                                                subComment.subCommentId,
+                                                comment.commentId  // 부모 댓글 ID도 전달
+                                              )}
+                                              size="small"
+                                            >
                                                 <MoreVertIcon />
                                               </IconButton>
                                               <Menu
-                                                anchorEl={anchorEl}
-                                                open={Boolean(anchorEl)}
-                                                onClose={handleMenuClose}
+                                                anchorEl={subCommentMenuAnchorEl}
+                                                open={Boolean(subCommentMenuAnchorEl) && currentSubCommentId === subComment.subCommentId}
+                                                onClose={handleSubCommentMenuClose}
                                               >
                                                 {userId ===
                                                 subComment.userId ? (
                                                   <Box>
                                                     <MenuItem
-                                                      onClick={() =>
-                                                        clickSubCommentModify(
-                                                          subComment.subCommentId
-                                                        )
-                                                      }
+                                                      onClick={() => clickSubCommentModify(subComment.subCommentId)}
                                                     >
                                                       수정
                                                     </MenuItem>
                                                     <MenuItem
-                                                      onClick={() =>
-                                                        handleSubCommentDelete(
-                                                          comment.commentId,
-                                                          subComment.subCommentId
-                                                        )
-                                                      }
+                                                      onClick={() => handleSubCommentDelete(
+                                                        currentCommentId,  // 저장된 부모 댓글 ID
+                                                        currentSubCommentId  // 현재 대댓글 ID
+                                                      )}
                                                     >
                                                       삭제
                                                     </MenuItem>
