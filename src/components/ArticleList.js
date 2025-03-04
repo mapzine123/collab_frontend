@@ -84,7 +84,8 @@ const ArticleList = ({ posts, setPosts }) => {
   };
 
   const handleLike = async (e, post) => {
-    const articleNum = post.articleNum;
+    const articleId = post.articleId;
+    const token = localStorage.getItem('jtw');
 
     if (userId === null) {
       alert("로그인이 필요한 기능입니다.");
@@ -95,10 +96,11 @@ const ArticleList = ({ posts, setPosts }) => {
       const response = await ky.post(`${articlePath}/reaction/like`, {
         json: {
           userId,
-          articleNum,
+          articleId,
         },
         headers: {
           "Content-Type": "application/json",
+          // "Authorization": `Bearer ${token}`, // JWT 토큰 추가
         },
       });
 
@@ -106,7 +108,7 @@ const ArticleList = ({ posts, setPosts }) => {
         const updatedArticle = await response.json();
         await setPosts((prevPosts) =>
           prevPosts.map((post) =>
-            post.articleNum === articleNum
+            post.articleId === articleId
               ? {
                   ...post,
                   likeCount: updatedArticle.likeCount,
@@ -124,7 +126,7 @@ const ArticleList = ({ posts, setPosts }) => {
   };
 
   const handleHate = async (e, post) => {
-    const articleNum = post.articleNum;
+    const articleId = post.articleId;
 
     if (userId === null) {
       alert("로그인이 필요한 기능입니다.");
@@ -135,7 +137,7 @@ const ArticleList = ({ posts, setPosts }) => {
       const response = await ky.post(`${articlePath}/reaction/hate`, {
         json: {
           userId,
-          articleNum,
+          articleId,
         },
         headers: {
           "Content-Type": "application/json",
@@ -146,7 +148,7 @@ const ArticleList = ({ posts, setPosts }) => {
         const updatedArticle = await response.json();
         await setPosts((prevPosts) =>
           prevPosts.map((post) =>
-            post.articleNum === articleNum
+            post.articleId === articleId
               ? {
                   ...post,
                   likeCount: updatedArticle.likeCount,
@@ -180,9 +182,9 @@ const ArticleList = ({ posts, setPosts }) => {
     <Box sx={{ width: '100%', maxWidth: '800px' }}>
       {posts.length !== 0 && (
         <List sx={{ width: '100%', p: 0 }}>
-          {posts.map((post) => (
+          {posts.map((post, index) => (
             <Card
-              key={post.articleNum}
+              key={post.articleNum || index}
               elevation={0}
               sx={{
                 mb: 3,
