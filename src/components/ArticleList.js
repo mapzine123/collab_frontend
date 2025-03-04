@@ -7,11 +7,9 @@ import {
   List,
   Card,
   CardContent,
-  ListItem,
   Avatar,
   Typography,
   MenuItem,
-  ListItemText,
 } from "@mui/material";
 import { useStore } from "../redux/store/store";
 
@@ -27,6 +25,24 @@ const ArticleList = ({ posts, setPosts }) => {
 
   const navigator = useNavigate();
 
+  const formatDate = (dateString) => {
+    console.log(dateString);
+    if (!dateString) return '날짜 없음';
+    
+    // ISO 문자열인지 확인
+    if (typeof dateString === 'string' && dateString.includes('T')) {
+      return new Date(dateString).toLocaleDateString();
+    }
+    
+    // 유닉스 타임스탬프인지 확인 (숫자인 경우)
+    if (!isNaN(dateString)) {
+      return new Date(Number(dateString)).toLocaleDateString();
+    }
+    
+    // 다른 형식의 날짜 문자열 시도
+    const date = new Date(dateString);
+    return !isNaN(date) ? date.toLocaleDateString() : '유효하지 않은 날짜';
+  };
   const handleClick = (e, articleNum) => {
     setAnchorEl(e.currentTarget);
     setSelectedArticleNum(articleNum);
@@ -281,7 +297,6 @@ const ArticleList = ({ posts, setPosts }) => {
                       : post.articleContent}
                   </Typography>
                 </Box>
- 
                 {/* 메타 정보 */}
                 <Typography 
                   variant="body2" 
@@ -292,9 +307,8 @@ const ArticleList = ({ posts, setPosts }) => {
                     fontSize: '0.875rem'
                   }}
                 >
-                  {new Date(post.createdAt).toLocaleDateString()} • 조회 {post.viewCount}
+                  {formatDate(post.createdAt)} • 조회 {post.viewCount}
                 </Typography>
- 
                 {/* 액션 버튼 */}
                 <Box sx={{ 
                   display: 'flex',
