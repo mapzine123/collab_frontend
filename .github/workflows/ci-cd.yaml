@@ -1,11 +1,9 @@
 name: Frontend CI/CD Pipeline
-
 on:
   push:
     branches: [ main, develop, master, dummy ]  # 원하는 브랜치 추가
   pull_request:
     branches: [ main, develop, master, dummy ]
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -57,18 +55,16 @@ jobs:
             kubectl apply -f frontend-deployment.yaml
             kubectl apply -f ingress.yaml
             kubectl rollout restart deployment/kgat-frontend
-
       - name: Update Kubernetes manifests
         uses: actions/checkout@v3
         with:
           repository: mapzine123/kgat-k8s-manifests 
           token: ${{ secrets.GH_TOKEN }}
           path: k8s-manifests
-
       - name: Update image tag in manifests
         run: |
           cd k8s-manifests
-          sed -i "s|image: .*kgat-frontend:.*|image: 676206900599.dkr.ecr.ap-northeast-2.amazonaws.com/kgat-frontend:${{ github.sha }}|" kgat-frontend.yaml
+          sed -i "s|image: .*kgat-frontend:.*|image: 676206900599.dkr.ecr.ap-northeast-2.amazonaws.com/kgat-frontend:${{ github.sha }}|" frontend/kgat-frontend.yaml
           git config --global user.email "github-actions@github.com"
           git config --global user.name "GitHub Actions"
           git add .
