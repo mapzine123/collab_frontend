@@ -20,6 +20,8 @@ import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import ThumbDownIcon from "@mui/icons-material/ThumbDown";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import ky from "ky";
+import ReactMarkdown from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
 import { useStore } from "../redux/store/store";
 import { commentPath, modifyMode } from "../util/constant";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -605,9 +607,13 @@ const [currentSubCommentId, setCurrentSubCommentId] = useState(null);
                 작성자: {post.author} | 작성일:{" "}
                 {new Date(post.createdAt).toLocaleDateString()}
               </Typography>
-              <Typography variant="body1" style={{ marginTop: "1rem" }}>
-                {post.articleContent}
-              </Typography>
+
+              <Box style={{ marginTop: "1rem" }}>
+                <ReactMarkdown rehypePlugins={[rehypeRaw]}>
+                  {post.articleContent}
+                </ReactMarkdown>
+              </Box>
+
             </CardContent>
           </Card>
         </Grid>

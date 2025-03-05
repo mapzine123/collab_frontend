@@ -12,10 +12,11 @@ import {
   MenuItem,
 } from "@mui/material";
 import { useStore } from "../redux/store/store";
-
+import ImageIcon from '@mui/icons-material/Image';
 import ky from "ky";
 import { articlePath, modifyMode } from "../util/constant";
 import { useNavigate } from "react-router-dom";
+import { extractFirstImageUrl, hasImageMarkdown, truncateContentWithoutImages } from "../util/markdownUtils";
 
 const ArticleList = ({ posts, setPosts }) => {
   const { userId } = useStore();
@@ -26,7 +27,6 @@ const ArticleList = ({ posts, setPosts }) => {
   const navigator = useNavigate();
 
   const formatDate = (dateString) => {
-    console.log(dateString);
     if (!dateString) return '날짜 없음';
     
     // ISO 문자열인지 확인
@@ -284,18 +284,64 @@ const ArticleList = ({ posts, setPosts }) => {
                     }}
                   >
                     {post.articleTitle}
+                    {hasImageMarkdown(post.articleContent) && (
+                      <Box 
+                        component="span" 
+                        sx={{ 
+                          ml: 1,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          color: 'primary.main'
+                        }}
+                      >
+                          <ImageIcon fontSize="small" sx={{ mr: 0.5 }} />
+                      </Box>
+                    )}
                   </Typography>
-                  <Typography 
-                    variant="body2" 
-                    sx={{ 
-                      color: '#666',
-                      lineHeight: 1.6 
-                    }}
-                  >
-                    {post.articleContent.length > 100
-                      ? post.articleContent.substring(0, 100) + "..."
-                      : post.articleContent}
-                  </Typography>
+                  
+                    {/* 본문과 이미지 미리보기를 가로로 배치 */}
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+                      {/* 본문 텍스트 */}
+                      <Typography 
+                        variant="body2" 
+                        sx={{ 
+                          color: '#666',
+                          lineHeight: 1.6,
+                          flex: 1
+                        }}
+                      >
+                        {truncateContentWithoutImages(post.articleContent, 100)}
+                      </Typography>
+
+                      {/* 이미지 미리보기 - 오른쪽에 배치 */}
+                      {hasImageMarkdown(post.articleContent) && (
+                        <Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                          {extractFirstImageUrl(post.articleContent) && (
+                            <Box 
+                              sx={{ 
+                                width: 80, 
+                                height: 80, 
+                                borderRadius: 1,
+                                overflow: 'hidden',
+                                flexShrink: 0,  // 이미지 크기 유지
+                                border: '1px solid',
+                                borderColor: 'divider'
+                              }}
+                            >
+                              <img 
+                                src={extractFirstImageUrl(post.articleContent)} 
+                                alt="미리보기" 
+                                style={{ 
+                                  width: '100%', 
+                                  height: '100%', 
+                                  objectFit: 'cover' 
+                                }}
+                              />
+                            </Box>
+                          )}
+                        </Box>
+                      )}
+                  </Box>
                 </Box>
                 {/* 메타 정보 */}
                 <Typography 
