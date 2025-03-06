@@ -1,4 +1,4 @@
-export const apiPath = "http://localhost:8080/api"
+export const apiPath = "http://13.125.207.143:31572/api"
 export const articlePath = apiPath + "/articles";
 export const userPath = apiPath + "/users";
 export const authPath = apiPath + "/auth";
@@ -9,8 +9,8 @@ export const writeMode = "write";
 export const modifyMode = "modify";
 
 export const API = {
-    BASE: "http://localhost:8080/api",
-    ARTICLES: "/articles",
+    BASE: "http://13.125.207.143:31572/api",
+    ARTICLES: "/articles", 
     USERS: "/users",
     AUTH: "/auth",
     TODOS: "/todos"
