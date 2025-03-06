@@ -14,9 +14,9 @@ import { useLocation, useNavigate } from "react-router-dom";
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ky from "ky";
-import { useStore } from "../redux/store/store";
-import { articlePath, modifyMode, writeMode } from "../util/constant";
-import { uploadImage, deleteImage } from "../aws/s3Storage";
+import { useStore } from "../../redux/store/store";
+import { articlePath, modifyMode, writeMode } from "../../util/constant";
+import { uploadImage, deleteImage } from "../../aws/s3Storage"
 
 const WriteArticle = () => {
   const location = useLocation();

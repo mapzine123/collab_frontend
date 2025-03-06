@@ -1,7 +1,7 @@
 import { Box, CssBaseline, Typography } from "@mui/material"
-import Sidebar from "./chat/Sidebar"
-import ChannelList from "./chat/ChannelList"
-import ChatArea from "./chat/ChatArea"
+import Sidebar from "./Sidebar"
+import ChannelList from "./ChannelList"
+import ChatArea from "./ChatArea"
 import { useState } from "react"
 
 const ChatMain = () => {

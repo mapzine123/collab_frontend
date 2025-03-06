@@ -1,9 +1,7 @@
 import { Box, Paper, Typography } from "@mui/material"
 import MessageInput from "./MessageInput";
 import { useEffect, useState } from "react";
-import { useStore } from "../../redux/store/store";
 import ChatWebSocket from "./ChatWebSocket";
-import { current } from "@reduxjs/toolkit";
 import { getMessages } from "./chatApi";
 
 const ChatArea = ({currentChannel}) => {

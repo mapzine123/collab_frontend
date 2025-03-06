@@ -22,8 +22,8 @@ import MoreVertIcon from "@mui/icons-material/MoreVert";
 import ky from "ky";
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
-import { useStore } from "../redux/store/store";
-import { commentPath, modifyMode } from "../util/constant";
+import { useStore } from "../../redux/store/store";
+import { commentPath, modifyMode } from "../../util/constant";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 
