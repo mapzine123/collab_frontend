@@ -5,13 +5,13 @@ import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import Signup from "./pages/Signup";
 import Menubar from "./components/Menubar";
 import { createTheme, CssBaseline, Snackbar, ThemeProvider } from "@mui/material";
-import MyPage from "./pages/MyPage";
 import { usePersistedStore, useStore } from "./redux/store/store";
 import { SnackbarProvider } from "notistack";
 import WriteArticle from "./pages/article/WriteArticle";
 import ContentView from "./pages/article/ContentView";
 import ChatMain from "./pages/chat/ChatMain";
 import ToDoList from "./pages/todoList/TodoList";
+import MyPage from "./pages/myPage/MyPage";
 
 const lightTheme = createTheme({
  palette: {
