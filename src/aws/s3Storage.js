@@ -71,6 +71,49 @@ export const uploadImage = (file, userId, onProgress) => {
   });
 };
 
+// 프로필 이미지 업로드 함수 (고정 경로 사용)
+export const uploadProfileImage = (file, userId, onProgress) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      // 파일 확장자 추출
+      const fileExtension = file.name.split('.').pop().toLowerCase();
+      // 고정된 경로 사용 (덮어쓰기 방식)
+      const key = `profile_images/${userId}.${fileExtension}`;
+      
+      const uploadParams = {
+        Bucket: S3_BUCKET_NAME,
+        Key: key,
+        Body: file,
+        ContentType: file.type
+      };
+      
+      const upload = new Upload({
+        client: s3Client,
+        params: uploadParams
+      });
+      
+      upload.on("httpUploadProgress", (progress) => {
+        const percentage = Math.round((progress.loaded / progress.total) * 100);
+        if (onProgress) onProgress(percentage);
+      });
+      
+      const result = await upload.done();
+      
+      // 서명된 URL 생성 (캐시 방지를 위한 타임스탬프 추가)
+      const signedUrl = await getPresignedUrl(key);
+      
+      resolve({
+        url: signedUrl,
+        name: `${userId}.${fileExtension}`,
+        path: key
+      });
+    } catch (err) {
+      console.error('프로필 이미지 S3 업로드 에러:', err);
+      reject(err);
+    }
+  });
+};
+
 // 이미지 삭제 함수
 export const deleteImage = async (imagePath) => {
   try {

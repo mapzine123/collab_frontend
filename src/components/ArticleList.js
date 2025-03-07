@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-
+// ArticleList.js 수정
+import React, { useState, useEffect } from "react";
 import {
   Menu,
   Button,
@@ -10,39 +10,71 @@ import {
   Avatar,
   Typography,
   MenuItem,
+  Skeleton,
 } from "@mui/material";
 import { useStore } from "../redux/store/store";
 import ImageIcon from '@mui/icons-material/Image';
 import ky from "ky";
-import { articlePath, modifyMode } from "../util/constant";
+import { articlePath, modifyMode, userPath } from "../util/constant";
 import { useNavigate } from "react-router-dom";
 import { extractFirstImageUrl, hasImageMarkdown, truncateContentWithoutImages } from "../util/markdownUtils";
+import { formatDate } from "../util/dateUtil";
 
 const ArticleList = ({ posts, setPosts }) => {
   const { userId } = useStore();
   const [selectedArticleNum, setSelectedArticleNum] = useState(null);
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
+  const [profileImages, setProfileImages] = useState({});
+  const [loadingImages, setLoadingImages] = useState({});
 
   const navigator = useNavigate();
 
-  const formatDate = (dateString) => {
-    if (!dateString) return '날짜 없음';
+  // 게시글에 표시된 모든 사용자의 프로필 이미지 로드
+  useEffect(() => {
+    const fetchProfileImages = async () => {
+      // 게시글에서 고유한 사용자 ID 추출
+      const uniqueUserIds = [...new Set(posts.map(post => post.articleWriter))];
+      
+      // 각 사용자 ID에 대해 프로필 이미지 로드
+      const newProfileImages = { ...profileImages };
+      const newLoadingImages = { ...loadingImages };
+      
+      await Promise.all(uniqueUserIds.map(async (writerId) => {
+        // 이미 가져온 이미지는 다시 가져오지 않음
+        if (profileImages[writerId]) return;
+        
+        try {
+          newLoadingImages[writerId] = true;
+          // 사용자 프로필 정보 요청
+          const token = localStorage.getItem('jwt');
+          const response = await ky.get(`${userPath}/profile?userId=${writerId}`, {
+            headers: token ? {
+              "Authorization": `Bearer ${token}`
+            } : {},
+            credentials: 'include'
+          }).json();
+          
+          // 응답에서 이미지 URL 추출
+          if (response && response.imageUrl) {
+            newProfileImages[writerId] = response.imageUrl;
+          }
+        } catch (error) {
+          console.error(`프로필 이미지 로드 오류 (${writerId}):`, error);
+        } finally {
+          newLoadingImages[writerId] = false;
+        }
+      }));
+      
+      setProfileImages(newProfileImages);
+      setLoadingImages(newLoadingImages);
+    };
     
-    // ISO 문자열인지 확인
-    if (typeof dateString === 'string' && dateString.includes('T')) {
-      return new Date(dateString).toLocaleDateString();
+    if (posts && posts.length > 0) {
+      fetchProfileImages();
     }
-    
-    // 유닉스 타임스탬프인지 확인 (숫자인 경우)
-    if (!isNaN(dateString)) {
-      return new Date(Number(dateString)).toLocaleDateString();
-    }
-    
-    // 다른 형식의 날짜 문자열 시도
-    const date = new Date(dateString);
-    return !isNaN(date) ? date.toLocaleDateString() : '유효하지 않은 날짜';
-  };
+  }, [posts]);
+  
   const handleClick = (e, articleNum) => {
     setAnchorEl(e.currentTarget);
     setSelectedArticleNum(articleNum);
@@ -76,6 +108,7 @@ const ArticleList = ({ posts, setPosts }) => {
     }
 
     try {
+      const token = localStorage.getItem('jwt');
       const response = await ky.delete(`${articlePath}`, {
         json: {
           userId,
@@ -83,6 +116,7 @@ const ArticleList = ({ posts, setPosts }) => {
         },
         headers: {
           "Content-Type": "application/json",
+          "Authorization": token ? `Bearer ${token}` : ''
         },
       });
 
@@ -95,13 +129,13 @@ const ArticleList = ({ posts, setPosts }) => {
     } catch (error) {
       console.error(error);
     } finally {
-      handleClick(e);
+      handleClose();
     }
   };
 
   const handleLike = async (e, post) => {
     const articleId = post.articleId;
-    const token = localStorage.getItem('jtw');
+    const token = localStorage.getItem('jwt');
 
     if (userId === null) {
       alert("로그인이 필요한 기능입니다.");
@@ -116,7 +150,7 @@ const ArticleList = ({ posts, setPosts }) => {
         },
         headers: {
           "Content-Type": "application/json",
-          // "Authorization": `Bearer ${token}`, // JWT 토큰 추가
+          "Authorization": token ? `Bearer ${token}` : ''
         },
       });
 
@@ -143,6 +177,7 @@ const ArticleList = ({ posts, setPosts }) => {
 
   const handleHate = async (e, post) => {
     const articleId = post.articleId;
+    const token = localStorage.getItem('jwt');
 
     if (userId === null) {
       alert("로그인이 필요한 기능입니다.");
@@ -157,6 +192,7 @@ const ArticleList = ({ posts, setPosts }) => {
         },
         headers: {
           "Content-Type": "application/json",
+          "Authorization": token ? `Bearer ${token}` : ''
         },
       });
 
@@ -194,6 +230,22 @@ const ArticleList = ({ posts, setPosts }) => {
     });
   };
 
+  // 프로필 이미지 표시 로직
+  const getProfileImage = (writerId) => {
+    // 이미지 있는 경우 반환
+    if (profileImages[writerId]) {
+      return profileImages[writerId];
+    }
+    
+    // 로딩 중인 경우 null 반환 (Skeleton 표시)
+    if (loadingImages[writerId]) {
+      return null;
+    }
+    
+    // 이미지 없는 경우 기본 이미지
+    return null; // Avatar는 기본적으로 이니셜을 표시
+  };
+
   return (
     <Box sx={{ width: '100%', maxWidth: '800px' }}>
       {posts.length !== 0 && (
@@ -222,11 +274,21 @@ const ArticleList = ({ posts, setPosts }) => {
                   mb: 2 
                 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Avatar
-                      alt={post.userId}
-                      src={post.profileImage}
-                      sx={{ width: 40, height: 40 }}
-                    />
+                    {loadingImages[post.articleWriter] ? (
+                      <Skeleton variant="circular" width={40} height={40} />
+                    ) : (
+                      <Avatar
+                        alt={post.articleWriter}
+                        src={getProfileImage(post.articleWriter)}
+                        sx={{ 
+                          width: 40, 
+                          height: 40, 
+                          bgcolor: !getProfileImage(post.articleWriter) ? 'primary.main' : undefined
+                        }}
+                      >
+                        {!getProfileImage(post.articleWriter) && post.articleWriter ? post.articleWriter.charAt(0).toUpperCase() : ''}
+                      </Avatar>
+                    )}
                     <Typography sx={{ fontWeight: 500, color: '#333' }}>
                       {post.articleWriter}
                     </Typography>
@@ -242,7 +304,7 @@ const ArticleList = ({ posts, setPosts }) => {
                       </Button>
                       <Menu
                         anchorEl={anchorEl}
-                        open={open}
+                        open={open && selectedArticleNum === post.articleNum}
                         onClose={handleClose}
                         elevation={2}
                         sx={{
@@ -286,15 +348,18 @@ const ArticleList = ({ posts, setPosts }) => {
                     {post.articleTitle}
                     {hasImageMarkdown(post.articleContent) && (
                       <Box 
-                        component="span" 
                         sx={{ 
-                          ml: 1,
-                          display: 'inline-flex',
+                          display: 'inline-flex', 
                           alignItems: 'center',
+                          justifyContent: 'center',
+                          p: 1,
+                          ml: 1,
+                          bgcolor: 'rgba(25, 118, 210, 0.1)',
+                          borderRadius: 1,
                           color: 'primary.main'
                         }}
                       >
-                          <ImageIcon fontSize="small" sx={{ mr: 0.5 }} />
+                        <ImageIcon fontSize="small" sx={{ mr: 0.5 }} />
                       </Box>
                     )}
                   </Typography>
@@ -312,35 +377,6 @@ const ArticleList = ({ posts, setPosts }) => {
                       >
                         {truncateContentWithoutImages(post.articleContent, 100)}
                       </Typography>
-
-                      {/* 이미지 미리보기 - 오른쪽에 배치 */}
-                      {hasImageMarkdown(post.articleContent) && (
-                        <Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                          {extractFirstImageUrl(post.articleContent) && (
-                            <Box 
-                              sx={{ 
-                                width: 80, 
-                                height: 80, 
-                                borderRadius: 1,
-                                overflow: 'hidden',
-                                flexShrink: 0,  // 이미지 크기 유지
-                                border: '1px solid',
-                                borderColor: 'divider'
-                              }}
-                            >
-                              <img 
-                                src={extractFirstImageUrl(post.articleContent)} 
-                                alt="미리보기" 
-                                style={{ 
-                                  width: '100%', 
-                                  height: '100%', 
-                                  objectFit: 'cover' 
-                                }}
-                              />
-                            </Box>
-                          )}
-                        </Box>
-                      )}
                   </Box>
                 </Box>
                 {/* 메타 정보 */}
@@ -422,6 +458,6 @@ const ArticleList = ({ posts, setPosts }) => {
       )}
     </Box>
   );
- };
+};
 
 export default ArticleList;

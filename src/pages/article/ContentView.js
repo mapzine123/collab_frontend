@@ -15,6 +15,7 @@ import {
   IconButton,
   Menu,
   MenuItem,
+  Skeleton,
 } from "@mui/material";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import ThumbDownIcon from "@mui/icons-material/ThumbDown";
@@ -23,14 +24,19 @@ import ky from "ky";
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import { useStore } from "../../redux/store/store";
-import { commentPath, modifyMode } from "../../util/constant";
+import { commentPath, modifyMode, userPath } from "../../util/constant";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
+import { formatDate } from "../../util/dateUtil";
 
 const ContentView = () => {
   const location = useLocation();
   const { post } = location.state || {};
   const { userId } = useStore();
+
+// 프로필 이미지 관리 상태 추가
+const [profileImages, setProfileImages] = useState({});
+const [loadingImages, setLoadingImages] = useState({});
 
 // 원본 댓글용 메뉴 관리 상태
 const [commentMenuAnchorEl, setCommentMenuAnchorEl] = useState(null);
@@ -83,8 +89,32 @@ const [currentSubCommentId, setCurrentSubCommentId] = useState(null);
         }
       };
       fetchComments();
+          // 게시글 작성자 프로필 이미지 로드
+      fetchProfileImage(post.articleWriter || post.author);
     }
-  }, [commentCount]); // comment 수가 변경될 때마다 댓글을 다시 불러옴
+  }, [commentCount, post]);
+
+// 댓글 로드 후 모든 댓글 작성자의 프로필 이미지 로드
+useEffect(() => {
+  if (comments.length > 0) {
+    // 모든 댓글 작성자의 고유 ID 목록 추출
+    const userIds = new Set(comments.map(comment => comment.userId));
+    
+    // 각 작성자의 프로필 이미지 로드
+    userIds.forEach(commentUserId => {
+      fetchProfileImage(commentUserId);
+    });
+
+    // 대댓글 작성자 프로필 이미지도 로드
+    comments.forEach(comment => {
+      if (comment.subComments && comment.subComments.length > 0) {
+        comment.subComments.forEach(subComment => {
+          fetchProfileImage(subComment.userId);
+        });
+      }
+    });
+  }
+}, [comments]);
 
   if (!post) {
     return (
@@ -95,6 +125,34 @@ const [currentSubCommentId, setCurrentSubCommentId] = useState(null);
       </Container>
     );
   }
+
+// 프로필 이미지 가져오는 함수 추가
+const fetchProfileImage = async (userIdToFetch) => {
+  // 이미 가져온 이미지거나 로딩 중이면 스킵
+  if (profileImages[userIdToFetch] || loadingImages[userIdToFetch]) {
+    return;
+  }
+
+  try {
+    setLoadingImages(prev => ({ ...prev, [userIdToFetch]: true }));
+    
+    const token = localStorage.getItem('jwt');
+    const response = await ky.get(`${userPath}/profile?userId=${userIdToFetch}`, {
+      headers: token ? {
+        "Authorization": `Bearer ${token}`
+      } : {},
+      credentials: 'include'
+    }).json();
+    
+    if (response && response.imageUrl) {
+      setProfileImages(prev => ({ ...prev, [userIdToFetch]: response.imageUrl }));
+    }
+  } catch (error) {
+    console.error(`프로필 이미지 로드 실패 (${userIdToFetch}):`, error);
+  } finally {
+    setLoadingImages(prev => ({ ...prev, [userIdToFetch]: false }));
+  }
+};
 
   const handleLike = async (commentId) => {
     if (userId === null) {
@@ -589,33 +647,55 @@ const [currentSubCommentId, setCurrentSubCommentId] = useState(null);
     }
   }
 
+// 프로필 이미지 표시 컴포넌트
+const ProfileAvatar = ({ userId, size = 'medium' }) => {
+  const isLoading = loadingImages[userId];
+  const imageUrl = profileImages[userId];
+  
+  const sizeProps = {
+    small: { width: 36, height: 36 },
+    medium: { width: 48, height: 48 },
+    large: { width: 64, height: 64 }
+  };
+  
+  // 스케일에 따라 아바타 크기 조정
+  const avatarSize = sizeProps[size] || sizeProps.medium;
+  
+  if (isLoading) {
+    return <Skeleton variant="circular" {...avatarSize} />;
+  }
+  
+  return (
+    <Avatar
+      alt={userId}
+      src={imageUrl}
+      sx={{
+        ...avatarSize,
+        bgcolor: !imageUrl ? 'primary.main' : undefined,
+      }}
+    >
+      {!imageUrl && userId ? userId.charAt(0).toUpperCase() : ''}
+    </Avatar>
+  );
+};
+
   return (
     <Container maxWidth="xl" style={{ marginTop: "2rem" }}>
       <Grid container spacing={3}>
         {/* Left side: Article content */}
         <Grid item xs={12} md={7} lg={8}>
-          <Card style={{ minHeight: "30vh" }}>
-            <CardContent>
-              <Typography variant="h4" component="h1" gutterBottom>
-                {post.articleTitle}
-              </Typography>
-              <Typography
-                variant="subtitle1"
-                color="textSecondary"
-                gutterBottom
-              >
-                작성자: {post.author} | 작성일:{" "}
-                {new Date(post.createdAt).toLocaleDateString()}
-              </Typography>
-
-              <Box style={{ marginTop: "1rem" }}>
-                <ReactMarkdown rehypePlugins={[rehypeRaw]}>
-                  {post.articleContent}
-                </ReactMarkdown>
+          {/* 게시글 헤더 (제목, 작성자 정보) */}
+            <Box display="flex" alignItems="center" mb={2}>
+              <ProfileAvatar userId={post.articleWriter || post.author} size="large" />
+              <Box ml={2}>
+                <Typography variant="h5" component="h1" gutterBottom>
+                  {post.articleTitle}
+                </Typography>
+                <Typography variant="subtitle2" color="text.secondary">
+                  {post.articleWriter || post.author} • {formatDate(post.createdAt)}
+                </Typography>
               </Box>
-
-            </CardContent>
-          </Card>
+            </Box>
         </Grid>
 
         {/* Right side: Comments */}
@@ -652,16 +732,10 @@ const [currentSubCommentId, setCurrentSubCommentId] = useState(null);
                     display="flex"
                     alignItems="flex-start"
                   >
-                    {/* 아바타 */}
-                    <Avatar
-                      alt={comment.author}
-                      src="/static/images/avatar/1.jpg"
-                      style={{
-                        marginRight: "16px",
-                        width: "64px",
-                        height: "64px",
-                      }}
-                    />
+                    {/* 프로필 아바타 */}
+                    <Box mr={2}>
+                      <ProfileAvatar userId={comment.userId} size="medium" />
+                    </Box>
 
                     {/* 댓글 내용 */}
                     <Box flexGrow={1}>
@@ -880,15 +954,9 @@ const [currentSubCommentId, setCurrentSubCommentId] = useState(null);
                                     {subComment.subCommentId !==
                                     modifyedSubCommentId ? (
                                       <Box display="flex">
-                                        <Avatar
-                                          alt={subComment.userId}
-                                          src="/static/images/avatar/2.jpg"
-                                          style={{
-                                            marginRight: "16px",
-                                            width: "48px",
-                                            height: "48px",
-                                          }}
-                                        />
+                                        <Box mr={2}>
+                                          <ProfileAvatar userId={subComment.userId} size="small" />
+                                        </Box>
                                         <Box flexGrow={1}>
                                           <Typography
                                             variant="body2"

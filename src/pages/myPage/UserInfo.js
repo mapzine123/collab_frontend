@@ -29,6 +29,7 @@ import { useNavigate } from "react-router-dom";
 import { validatePassword } from "../../util/validator";
 import { userPath } from "../../util/constant";
 import { useStore } from "../../redux/store/store";
+import { uploadProfileImage } from "../../aws/s3Storage";
 
 const UserInfo = () => {
   // State management
@@ -40,6 +41,7 @@ const UserInfo = () => {
   const [alertMessage, setAlertMessage] = useState("");
   const [alertSeverity, setAlertSeverity] = useState("success");
   const [imageLoading, setImageLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const { userId } = useStore();
   const { userImagePath, setUserImagePath } = useStore();
@@ -53,38 +55,59 @@ const UserInfo = () => {
     setShowPassword(!showPassword);
   };
 
-  // Profile image change handler
-  const handleProfileImageChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+// 프로필 이미지 변경 핸들러
+const handleProfileImageChange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const token = localStorage.getItem('jwt');
 
-    try {
-      setImageLoading(true);
-      setUserImagePath(URL.createObjectURL(file));
-
-      const fileExtension = file.name.split(".").pop();
-
-      const formData = new FormData();
-      formData.append("userId", userId);
-      formData.append("file", file);
-      formData.append("fileExtension", fileExtension);
-
-      const response = await ky.post(`${userPath}/image`, { body: formData });
-      const imagePath = await response.text();
-      
-      // Show success message
-      setAlertSeverity("success");
-      setAlertMessage("프로필 이미지가 성공적으로 변경되었습니다.");
-      setAlertOpen(true);
-    } catch (error) {
-      console.error(error);
-      setAlertSeverity("error");
-      setAlertMessage("이미지 업로드 중 오류가 발생했습니다.");
-      setAlertOpen(true);
-    } finally {
-      setImageLoading(false);
-    }
-  };
+  try {
+    setImageLoading(true);
+    setUserImagePath(URL.createObjectURL(file));
+    
+    // 프로필 전용 업로드 함수 사용
+    const onProgress = (progress) => {
+      setUploadProgress(progress);
+    };
+    
+    const uploadResult = await uploadProfileImage(file, userId, onProgress);
+    console.log("S3 프로필 이미지 업로드 결과:", uploadResult);
+    
+    // 서버에 프로필 이미지 경로 업데이트
+    const updateData = {
+      userId: userId,
+      imagePath: uploadResult.path,
+      imageUrl: uploadResult.url
+    };
+    
+    // 백엔드 API 호출
+    const response = await ky.post(`${userPath}/image`, {
+      json: updateData,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      credentials: 'include'
+    });
+    
+    // 업로드 성공 후 서명된 URL로 이미지 경로 업데이트
+    setUserImagePath(uploadResult.url);
+    console.log("서명된 URL:", uploadResult.url);
+    console.log("URL 길이:", uploadResult.url.length);
+    console.log("URL 구성요소:", new URL(uploadResult.url));
+    setAlertSeverity("success");
+    setAlertMessage("프로필 이미지가 성공적으로 변경되었습니다.");
+    setAlertOpen(true);
+  } catch (error) {
+    console.error("이미지 업로드 에러:", error);
+    setAlertSeverity("error");
+    setAlertMessage("이미지 업로드 중 오류가 발생했습니다.");
+    setAlertOpen(true);
+  } finally {
+    setImageLoading(false);
+    setUploadProgress(0);
+  }
+};
 
   // Form submit handler
   const handleSubmit = async (e) => {
@@ -268,7 +291,25 @@ const UserInfo = () => {
                     borderRadius: '50%',
                   }}
                 >
-                  <CircularProgress />
+                  <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+                    <CircularProgress variant="determinate" value={uploadProgress} color="primary" />
+                    <Box
+                      sx={{
+                        top: 0,
+                        left: 0,
+                        bottom: 0,
+                        right: 0,
+                        position: 'absolute',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Typography variant="caption" component="div" color="text.secondary">
+                        {`${Math.round(uploadProgress)}%`}
+                      </Typography>
+                    </Box>
+                  </Box>
                 </Box>
               )}
               <Avatar
@@ -301,6 +342,12 @@ const UserInfo = () => {
                 />
               </Button>
             </CardActions>
+            
+            {userImagePath && (
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, textAlign: 'center' }}>
+                S3에 저장된 프로필 이미지 ({imageLoading ? '업로드 중...' : '완료'})
+              </Typography>
+            )}
           </CardContent>
         </Card>
       </Grid>
@@ -315,7 +362,6 @@ const UserInfo = () => {
         <Alert
           onClose={() => setAlertOpen(false)}
           severity={alertSeverity}
-          variant="filled"
           sx={{ width: '100%' }}
         >
           {alertMessage}
