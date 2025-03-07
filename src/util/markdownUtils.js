@@ -101,3 +101,39 @@ export const truncateContentWithImageReplacement = (content, maxLength = 100, re
     if (replaced.length <= maxLength) return replaced;
     return replaced.substring(0, maxLength) + "...";
 };
+
+/**
+ * 마크다운 텍스트를 일반 텍스트로 변환
+ * @param {string} markdown - 원본 마크다운 텍스트
+ * @returns {string} 일반 텍스트로 변환된 문자열
+ */
+export const convertMarkdownToPlainText = (markdown) => {
+    if (!markdown) return '';
+
+    // 이미지 태그 제거
+    markdown = markdown.replace(/!\[.*?\]\(.*?\)/g, '');
+
+    // 코드 블록 제거
+    markdown = markdown.replace(/```[\s\S]*?```/g, '');
+    markdown = markdown.replace(/`[^`\n]+`/g, '');
+
+    // 헤더 제거
+    markdown = markdown.replace(/^#+\s+/gm, '');
+
+    // 링크 텍스트로 변환
+    markdown = markdown.replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1');
+
+    // 볼드, 이탤릭, 취소선 마크다운 제거
+    markdown = markdown.replace(/(\*{1,2}|_{1,2}|~~)([^*_~]+)\1/g, '$2');
+
+    // 리스트 마크다운 제거
+    markdown = markdown.replace(/^[\s]*[-*+]\s*/gm, '');
+
+    // 인용구 마크다운 제거
+    markdown = markdown.replace(/^>\s*/gm, '');
+
+    // 연속된 공백 제거
+    markdown = markdown.replace(/\s+/g, ' ').trim();
+
+    return markdown;
+};

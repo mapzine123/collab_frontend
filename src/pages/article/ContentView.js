@@ -23,6 +23,8 @@ import MoreVertIcon from "@mui/icons-material/MoreVert";
 import ky from "ky";
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { materialDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { useStore } from "../../redux/store/store";
 import { commentPath, modifyMode, userPath } from "../../util/constant";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -679,24 +681,65 @@ const ProfileAvatar = ({ userId, size = 'medium' }) => {
   );
 };
 
-  return (
-    <Container maxWidth="xl" style={{ marginTop: "2rem" }}>
-      <Grid container spacing={3}>
-        {/* Left side: Article content */}
-        <Grid item xs={12} md={7} lg={8}>
-          {/* 게시글 헤더 (제목, 작성자 정보) */}
-            <Box display="flex" alignItems="center" mb={2}>
-              <ProfileAvatar userId={post.articleWriter || post.author} size="large" />
-              <Box ml={2}>
-                <Typography variant="h5" component="h1" gutterBottom>
-                  {post.articleTitle}
-                </Typography>
-                <Typography variant="subtitle2" color="text.secondary">
-                  {post.articleWriter || post.author} • {formatDate(post.createdAt)}
-                </Typography>
-              </Box>
-            </Box>
-        </Grid>
+return (
+  <Container maxWidth="xl" style={{ marginTop: "2rem" }}>
+    <Grid container spacing={3}>
+      {/* Left side: Article content */}
+      <Grid item xs={12} md={7} lg={8}>
+        {/* 게시글 헤더 (제목, 작성자 정보) */}
+        <Box display="flex" alignItems="center" mb={2}>
+          <ProfileAvatar userId={post.articleWriter || post.author} size="large" />
+          <Box ml={2}>
+            <Typography variant="h5" component="h1" gutterBottom>
+              {post.articleTitle}
+            </Typography>
+            <Typography variant="subtitle2" color="text.secondary">
+              {post.articleWriter || post.author} • {formatDate(post.createdAt)}
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* 게시글 본문 */}
+        <Card variant="outlined" sx={{ mt: 2 }}>
+          <CardContent>
+            <ReactMarkdown 
+              components={{
+                code({node, inline, className, children, ...props}) {
+                  const match = /language-(\w+)/.exec(className || '');
+                  return !inline && match ? (
+                    <SyntaxHighlighter
+                      style={materialDark}
+                      language={match[1]}
+                      PreTag="div"
+                      {...props}
+                    >
+                      {String(children).replace(/\n$/, '')}
+                    </SyntaxHighlighter>
+                  ) : (
+                    <code className={className} {...props}>
+                      {children}
+                    </code>
+                  );
+                },
+                img: (imgProps) => (
+                  <img 
+                    {...imgProps} 
+                    style={{ 
+                      maxWidth: '100%', 
+                      height: 'auto', 
+                      borderRadius: '4px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)' 
+                    }} 
+                  />
+                )
+              }}
+              rehypePlugins={[rehypeRaw]}
+            >
+              {post.articleContent}
+            </ReactMarkdown>
+          </CardContent>
+        </Card>
+      </Grid>
 
         {/* Right side: Comments */}
         <Grid item xs={12} md={5} lg={4}>

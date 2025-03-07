@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { 
   TextField, 
   Button, 
@@ -6,35 +6,73 @@ import {
   Typography, 
   Box,
   Paper,
-  Grid,
-  IconButton,
   CircularProgress
 } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
-import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
-import DeleteIcon from '@mui/icons-material/Delete';
 import ky from "ky";
 import { useStore } from "../../redux/store/store";
 import { articlePath, modifyMode, writeMode } from "../../util/constant";
 import { uploadImage, deleteImage } from "../../aws/s3Storage"
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+import hljs from 'highlight.js';
+import 'highlight.js/styles/github.css';
+
+// 하이라이트.js 설정
+hljs.configure({
+  languages: ['javascript', 'python', 'java', 'html', 'css', 'cpp', 'csharp']
+});
+
+// 레거시 findDOMNode 경고 억제를 위한 래퍼 컴포넌트
+const QuillWrapper = ({ forwardedRef, ...props }) => {
+  return <ReactQuill ref={forwardedRef} {...props} />;
+};
 
 const WriteArticle = () => {
   const location = useLocation();
 
+  // 디버깅을 위해 location.state 전체를 출력
+  useEffect(() => {
+    console.log('Location State:', location.state);
+  }, [location.state]);
+
   const {
-    selectedArticleNum = 0,
+    articleId = 0,
     prevTitle = "",
     prevContent = "",
-    prevImages = [], // 기본값 추가
-    mode = writeMode, // 중괄호 제거 (올바른 기본값 설정)
+    prevImages = [], 
+    mode = writeMode,
   } = location.state || {};
 
-
   const [title, setTitle] = useState(prevTitle);
-  const [content, setContent] = useState(prevContent);
+  const [content, setContent] = useState(prevContent || '');
   const [images, setImages] = useState(prevImages || []);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+
+  // Quill 참조를 위한 ref 생성
+  const quillRef = useRef(null);
+
+  // Quill 모듈 메모이제이션
+  const modules = useMemo(() => ({
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike', 'blockquote'],
+      [{'list': 'ordered'}, {'list': 'bullet'}, {'indent': '-1'}, {'indent': '+1'}],
+      ['link', 'image', 'code-block'],
+      ['clean']
+    ],
+    syntax: {
+      highlight: text => hljs.highlightAuto(text).value,
+    }
+  }), []);
+
+  const formats = useMemo(() => [
+    'header',
+    'bold', 'italic', 'underline', 'strike', 'blockquote',
+    'list', 'bullet', 'indent',
+    'link', 'image', 'code-block'
+  ], []);
 
   const { userId } = useStore();
   const navigator = useNavigate();
@@ -43,50 +81,38 @@ const WriteArticle = () => {
     if (userId === null) {
       navigator("/login");
     }
-  }, []);
+  }, [userId, navigator]);
 
-  // 이미지를 본문에 삽입하는 함수
-  const insertImageToContent = (imageUrl) => {
-    const imageTag = `\n![이미지](${imageUrl})\n`;
-    setContent(prevContent => prevContent + imageTag);
+  // 에디터가 사라지는 문제 방지를 위한 콜백
+  const handleContentChange = (value) => {
+    // 빈 문자열이 아닌 경우에만 상태 업데이트
+    setContent(value === '<p><br></p>' ? '' : (value || ''));
   };
 
-    // 취소 처리 함수 추가
-    const handleCancel = () => {
-      // 작성 취소시 업로드한 이미지 삭제
-      if (images.length > 0 && mode === writeMode) {
-        images.forEach(async (image) => {
-          if (image.path) {
-            try {
-              await deleteImage(image.path);
-            } catch (error) {
-              console.error("Error cleaning up images:", error);
-            }
-          }
-        });
-      }
-      navigator("/");
-    };
-
+  // 이미지 업로드 핸들러 (퀼 에디터에 직접 이미지 삽입)
   const handleImageUpload = async (event) => {
     const files = event.target.files;
-    if(!files || files.length === 0) {
-      return;
-    }
+    if(!files || files.length === 0) return;
 
     setUploading(true);
     setUploadProgress(0);
 
     try {
-      // 선택한 모든 파일을 업로드
-      const uploadPromises = Array.from(files).map(file => {
-        return uploadImage(file, userId, (progress) => {
-          setUploadProgress(progress);
-        });
+      // 선택한 파일 업로드
+      const uploadedImage = await uploadImage(files[0], userId, (progress) => {
+        setUploadProgress(progress);
       });
-
-      const uploadedImages = await Promise.all(uploadPromises);
-      setImages(prevImages => [...prevImages, ...uploadedImages]);
+      
+      // 이미지 목록에 추가
+      setImages(prevImages => [...prevImages, uploadedImage]);
+      
+      // Quill 에디터에 이미지 삽입
+      if (quillRef.current) {
+        const quillEditor = quillRef.current.getEditor();
+        const range = quillEditor.getSelection(true);
+        quillEditor.insertEmbed(range.index, 'image', uploadedImage.url);
+      }
+      
     } catch(error) {
       console.error("Error uploading images: ", error);
       alert("이미지 업로드 중 오류가 발생했습니다.");
@@ -96,33 +122,35 @@ const WriteArticle = () => {
     }
   }
 
-    const handleRemoveImage = async (index) => {
-      try {
-        const imageToRemove = images[index];
+  const handleRemoveImage = async (index) => {
+    try {
+      const imageToRemove = images[index];
 
-        // Firebase에서 이미지 삭제
-        if(imageToRemove.path) {
-          await deleteImage(imageToRemove.path);
-        }
-
-        // 상태에서 이미지 제거
-        setImages(prevImages => prevImages.filter((_, i) => i !== index));
-      } catch(error) {
-        console.error("Error removeing image: ", error);
-        alert("이미지 삭제 중 오류가 발생했습니다.");
+      // Firebase에서 이미지 삭제
+      if(imageToRemove.path) {
+        await deleteImage(imageToRemove.path);
       }
+
+      // 상태에서 이미지 제거
+      setImages(prevImages => prevImages.filter((_, i) => i !== index));
+    } catch(error) {
+      console.error("Error removing image: ", error);
+      alert("이미지 삭제 중 오류가 발생했습니다.");
     }
+  }
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
     const article = {
-      articleNum: selectedArticleNum,
+      articleId: articleId,
       articleTitle: title,
       articleContent: content,
       articleWriter: userId,
       images: images.map(img => ({ url: img.url, name: img.name })), // 이미지 정보 추가
     };
+
+    console.log(article);
 
     try {
       if (mode === writeMode) {
@@ -134,6 +162,8 @@ const WriteArticle = () => {
         });
         alert("성공적으로 작성되었습니다.");
       } else if (mode === modifyMode) {
+        console.log(article);
+
         await ky.put(`${articlePath}`, {
           json: article,
           headers: {
@@ -168,125 +198,54 @@ const WriteArticle = () => {
               sx={{ borderRadius: 1 }}
             />
           </Box>
+          
           <Box mb={3}>
-            <TextField
-              fullWidth
-              label="본문"
-              variant="outlined"
+            <Typography variant="h6" gutterBottom>본문</Typography>
+            <QuillWrapper 
+              forwardedRef={quillRef}
+              theme="snow"
               value={content}
-              onChange={(e) => setContent(e.target.value)}
-              multiline
-              rows={12}
-              required
-              autoComplete="off"
-              sx={{ borderRadius: 1 }}
+              onChange={handleContentChange}
+              modules={modules}
+              formats={formats}
+              style={{ height: '300px', marginBottom: '50px' }}
             />
           </Box>
 
-          {/* 이미지 업로드 섹션 */}
           <Box mb={3}>
-            <Typography variant="h6" gutterBottom>
-              이미지 첨부
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <input
-                accept="image/*"
-                id="upload-image-button"
-                type="file"
-                multiple
-                style={{ display: 'none' }}
-                onChange={handleImageUpload}
+            <input
+              accept="image/*"
+              id="upload-image-button"
+              type="file"
+              style={{ display: 'none' }}
+              onChange={handleImageUpload}
+              disabled={uploading}
+            />
+            <label htmlFor="upload-image-button">
+              <Button
+                variant="contained"
+                component="span"
                 disabled={uploading}
-              />
-              <label htmlFor="upload-image-button">
-                <Button
-                  variant="contained"
-                  component="span"
-                  startIcon={<AddPhotoAlternateIcon />}
-                  disabled={uploading}
-                  sx={{ borderRadius: 2 }}
-                >
-                  이미지 선택
-                </Button>
-              </label>
-              {uploading && (
-                <Box sx={{ display: 'flex', alignItems: 'center', ml: 2 }}>
-                  <CircularProgress size={24} sx={{ mr: 1 }} />
-                  <Typography variant="body2">
-                    {uploadProgress}% 업로드 중...
-                  </Typography>
-                </Box>
-              )}
-            </Box>
-
-            {/* 업로드된 이미지 미리보기 */}
-            {images.length > 0 && (
-              <Grid container spacing={2} sx={{ mt: 2 }}>
-                {images.map((image, index) => (
-                  <Grid item xs={6} sm={4} md={3} key={index}>
-                    <Box
-                      sx={{
-                        position: 'relative',
-                        borderRadius: 1,
-                        overflow: 'hidden',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                      }}
-                    >
-                      <img
-                        src={image.url}
-                        alt={`업로드 이미지 ${index + 1}`}
-                        style={{
-                          width: '100%',
-                          height: '120px',
-                          objectFit: 'cover',
-                          display: 'block',
-                          cursor: 'pointer',
-                        }}
-                        onClick={() => insertImageToContent(image.url)}
-                      />
-                      <Box
-                        sx={{
-                          position: 'absolute',
-                          top: 0,
-                          right: 0,
-                          bgcolor: 'rgba(0,0,0,0.5)',
-                          borderRadius: '0 0 0 8px',
-                        }}
-                      >
-                        <IconButton
-                          size="small"
-                          onClick={() => handleRemoveImage(index)}
-                          sx={{ color: 'white' }}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Box>
-                    </Box>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        display: 'block',
-                        textAlign: 'center',
-                        mt: 0.5,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      클릭하여 본문에 삽입
-                    </Typography>
-                  </Grid>
-                ))}
-              </Grid>
+                sx={{ borderRadius: 2 }}
+              >
+                이미지 업로드
+              </Button>
+            </label>
+            {uploading && (
+              <Box sx={{ display: 'flex', alignItems: 'center', ml: 2 }}>
+                <CircularProgress size={24} sx={{ mr: 1 }} />
+                <Typography variant="body2">
+                  {uploadProgress}% 업로드 중...
+                </Typography>
+              </Box>
             )}
           </Box>
 
-          {/* 버튼 섹션 */}
           <Box display="flex" justifyContent="space-between" mt={4}>
             <Button
               variant="outlined"
               color="secondary"
-              onClick={handleCancel}
+              onClick={() => navigator("/")}
               sx={{ borderRadius: 2 }}
             >
               취소
