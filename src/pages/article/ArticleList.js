@@ -372,7 +372,10 @@ const ArticleList = ({ posts, setPosts }) => {
                 {post.articleWriter === userId && (
                   <>
                     <IconButton
-                      onClick={(e) => handleClick(e, post.articleId)}
+                      onClick={(e) => {
+                        e.stopPropagation(); // 게시글 클릭 이벤트 방지
+                        handleClick(e, post.articleId);
+                      }}
                       size="small"
                       sx={{ ml: 1 }}
                     >
@@ -382,6 +385,7 @@ const ArticleList = ({ posts, setPosts }) => {
                       anchorEl={anchorEl}
                       open={open && selectedArticleId === post.articleId}
                       onClose={handleClose}
+                      onClick={(e) => e.stopPropagation()} // 메뉴 클릭 시 게시글 클릭 방지
                       anchorOrigin={{
                         vertical: 'bottom',
                         horizontal: 'right',
@@ -392,18 +396,24 @@ const ArticleList = ({ posts, setPosts }) => {
                       }}
                     >
                       <MenuItem 
-                        onClick={(e) => handleModify(
-                          e, 
-                          post.articleId, 
-                          post.articleTitle, 
-                          post.articleContent, 
-                          modifyMode
-                        )}
+                        onClick={(e) => {
+                          e.stopPropagation(); // 게시글 클릭 이벤트 방지
+                          handleModify(
+                            e, 
+                            post.articleId, 
+                            post.articleTitle, 
+                            post.articleContent, 
+                            modifyMode
+                          );
+                        }}
                       >
                         수정하기
                       </MenuItem>
                       <MenuItem 
-                        onClick={handleDelete} 
+                        onClick={(e) => {
+                          e.stopPropagation(); // 게시글 클릭 이벤트 방지
+                          handleDelete(e);
+                        }} 
                         sx={{ color: 'error.main' }}
                       >
                         삭제하기
