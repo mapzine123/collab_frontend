@@ -22,7 +22,7 @@ import { formatDate } from "../util/dateUtil";
 
 const ArticleList = ({ posts, setPosts }) => {
   const { userId } = useStore();
-  const [selectedArticleNum, setSelectedArticleNum] = useState(null);
+  const [selectedarticleId, setSelectedarticleId] = useState(null);
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
   const [profileImages, setProfileImages] = useState({});
@@ -75,26 +75,26 @@ const ArticleList = ({ posts, setPosts }) => {
     }
   }, [posts]);
   
-  const handleClick = (e, articleNum) => {
+  const handleClick = (e, articleId) => {
     setAnchorEl(e.currentTarget);
-    setSelectedArticleNum(articleNum);
+    setSelectedarticleId(articleId);
   };
 
   const handleClose = () => {
     setAnchorEl(null);
-    setSelectedArticleNum(null);
+    setSelectedarticleId(null);
   };
 
   const handleModify = (
     e,
-    selectedArticleNum,
+    selectedarticleId,
     prevTitle,
     prevContent,
     mode
   ) => {
     navigator("/write", {
       state: {
-        selectedArticleNum: selectedArticleNum,
+        selectedarticleId: selectedarticleId,
         prevTitle: prevTitle,
         prevContent: prevContent,
         mode,
@@ -103,7 +103,7 @@ const ArticleList = ({ posts, setPosts }) => {
   };
 
   const handleDelete = async (e) => {
-    if (selectedArticleNum === null) {
+    if (selectedarticleId === null) {
       return;
     }
 
@@ -112,7 +112,7 @@ const ArticleList = ({ posts, setPosts }) => {
       const response = await ky.delete(`${articlePath}`, {
         json: {
           userId,
-          articleNum: selectedArticleNum,
+          articleId: selectedarticleId,
         },
         headers: {
           "Content-Type": "application/json",
@@ -121,9 +121,19 @@ const ArticleList = ({ posts, setPosts }) => {
       });
 
       if (response.ok) {
-        setPosts((prevPosts) =>
-          prevPosts.filter((post) => post.articleNum !== selectedArticleNum)
-        );
+        setPosts(prevPosts => {
+          // 제거할 게시글 찾기
+          const postToRemove = prevPosts.find(post => post.articleId === selectedarticleId);
+          if (!postToRemove) {
+            console.warn("삭제할 게시글을 찾을 수 없습니다:", selectedarticleId);
+            return prevPosts;
+          }
+          
+          // 해당 게시글만 제거
+          const newPosts = prevPosts.filter(post => post !== postToRemove);
+          console.log("삭제 전:", prevPosts.length, "삭제 후:", newPosts.length);
+          return newPosts;
+        });
         alert("게시글이 삭제되었습니다.");
       }
     } catch (error) {
@@ -252,7 +262,7 @@ const ArticleList = ({ posts, setPosts }) => {
         <List sx={{ width: '100%', p: 0 }}>
           {posts.map((post, index) => (
             <Card
-              key={post.articleNum || index}
+              key={post.articleId || index}
               elevation={0}
               sx={{
                 mb: 3,
@@ -297,14 +307,14 @@ const ArticleList = ({ posts, setPosts }) => {
                   {post.articleWriter === userId && (
                     <Box>
                       <Button
-                        onClick={(e) => handleClick(e, post.articleNum)}
+                        onClick={(e) => handleClick(e, post.articleId)}
                         sx={{ minWidth: 'auto', color: '#666' }}
                       >
                         ⁝
                       </Button>
                       <Menu
                         anchorEl={anchorEl}
-                        open={open && selectedArticleNum === post.articleNum}
+                        open={open && selectedarticleId === post.articleId}
                         onClose={handleClose}
                         elevation={2}
                         sx={{
@@ -315,7 +325,7 @@ const ArticleList = ({ posts, setPosts }) => {
                           }
                         }}
                       >
-                        <MenuItem onClick={(e) => handleModify(e, post.articleNum, post.articleTitle, post.articleContent, modifyMode)}>
+                        <MenuItem onClick={(e) => handleModify(e, post.articleId, post.articleTitle, post.articleContent, modifyMode)}>
                           수정하기
                         </MenuItem>
                         <MenuItem onClick={handleDelete} sx={{ color: '#d32f2f' }}>
