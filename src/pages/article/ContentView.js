@@ -30,6 +30,9 @@ import { commentPath, modifyMode, userPath } from "../../util/constant";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import { formatDate } from "../../util/dateUtil";
+import ThumbUpOutlinedIcon from '@mui/icons-material/ThumbUpOutlined';
+import ThumbDownOutlinedIcon from '@mui/icons-material/ThumbDownOutlined';
+import { articlePath } from "../../util/constant";
 
 const ContentView = () => {
   const location = useLocation();
@@ -43,6 +46,7 @@ const [loadingImages, setLoadingImages] = useState({});
 // 원본 댓글용 메뉴 관리 상태
 const [commentMenuAnchorEl, setCommentMenuAnchorEl] = useState(null);
 const [currentCommentId, setCurrentCommentId] = useState(null);
+const [currentPost, setCurrentPost] = useState(post || {});
 
 // 대댓글용 메뉴 관리 상태
 const [subCommentMenuAnchorEl, setSubCommentMenuAnchorEl] = useState(null);
@@ -127,6 +131,74 @@ useEffect(() => {
       </Container>
     );
   }
+
+// 게시글 좋아요 기능
+const handleArticleLike = async () => {
+  if (userId === null) {
+    alert("로그인이 필요한 기능입니다.");
+    return;
+  }
+
+  try {
+    const response = await ky.post(`${articlePath}/reaction/like`, {
+      json: {
+        userId,
+        articleId: currentPost.articleId,
+      },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": localStorage.getItem('jwt') ? `Bearer ${localStorage.getItem('jwt')}` : ''
+      },
+    });
+
+    if (response.ok) {
+      const updatedArticle = await response.json();
+      setCurrentPost(prev => ({
+        ...prev,
+        likeCount: updatedArticle.likeCount,
+        isLike: !prev.isLike,
+        isHate: false,
+        hateCount: updatedArticle.hateCount
+      }));
+    }
+  } catch (error) {
+    console.error("게시글 좋아요 처리 오류:", error);
+  }
+};
+
+// 게시글 싫어요 기능
+const handleArticleHate = async () => {
+  if (userId === null) {
+    alert("로그인이 필요한 기능입니다.");
+    return;
+  }
+
+  try {
+    const response = await ky.post(`${articlePath}/reaction/hate`, {
+      json: {
+        userId,
+        articleId: currentPost.articleId,
+      },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": localStorage.getItem('jwt') ? `Bearer ${localStorage.getItem('jwt')}` : ''
+      },
+    });
+
+    if (response.ok) {
+      const updatedArticle = await response.json();
+      setCurrentPost(prev => ({
+        ...prev,
+        likeCount: updatedArticle.likeCount,
+        isLike: false,
+        isHate: !prev.isHate,
+        hateCount: updatedArticle.hateCount
+      }));
+    }
+  } catch (error) {
+    console.error("게시글 싫어요 처리 오류:", error);
+  }
+};
 
 // 프로필 이미지 가져오는 함수 추가
 const fetchProfileImage = async (userIdToFetch) => {
@@ -688,13 +760,51 @@ return (
       <Grid item xs={12} md={7} lg={8}>
         {/* 게시글 헤더 (제목, 작성자 정보) */}
         <Box display="flex" alignItems="center" mb={2}>
-          <ProfileAvatar userId={post.articleWriter || post.author} size="large" />
-          <Box ml={2}>
+          <ProfileAvatar userId={currentPost.articleWriter || currentPost.author} size="large" />
+          <Box ml={2} flex={1}>
             <Typography variant="h5" component="h1" gutterBottom>
-              {post.articleTitle}
+              {currentPost.articleTitle}
             </Typography>
             <Typography variant="subtitle2" color="text.secondary">
-              {post.articleWriter || post.author} • {formatDate(post.createdAt)}
+              {currentPost.articleWriter || currentPost.author} • {formatDate(currentPost.createdAt)}
+            </Typography>
+          </Box>
+          
+          {/* 게시글 좋아요/싫어요 버튼 - 우측 정렬 */}
+          <Box display="flex" alignItems="center">
+            <Button
+              startIcon={currentPost.isLike ? <ThumbUpIcon color="primary" /> : <ThumbUpOutlinedIcon />}
+              onClick={handleArticleLike}
+              size="small"
+              sx={{ 
+                minWidth: 'auto', 
+                textTransform: 'none',
+                color: currentPost.isLike ? 'primary.main' : 'text.secondary'
+              }}
+            >
+              {currentPost.likeCount || 0}
+            </Button>
+
+            <Button
+              startIcon={currentPost.isHate ? <ThumbDownIcon color="error" /> : <ThumbDownOutlinedIcon />}
+              onClick={handleArticleHate}
+              size="small"
+              sx={{ 
+                minWidth: 'auto', 
+                textTransform: 'none',
+                color: currentPost.isHate ? 'error.main' : 'text.secondary',
+                ml: 1
+              }}
+            >
+              {currentPost.hateCount || 0}
+            </Button>
+            
+            <Typography 
+              variant="body2" 
+              color="text.secondary"
+              sx={{ ml: 2 }}
+            >
+              조회 {currentPost.viewCount || 0}
             </Typography>
           </Box>
         </Box>
