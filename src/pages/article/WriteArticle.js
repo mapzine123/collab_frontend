@@ -64,6 +64,36 @@ const WriteArticle = () => {
     ],
     syntax: {
       highlight: text => hljs.highlightAuto(text).value,
+    },
+    keyboard: {
+      bindings: {
+        // 코드 블록 단축키 (Ctrl+Shift+C)
+        'code block': {
+          key: 'C',
+          shortKey: true,
+          shiftKey: true,
+          handler: function(range) {
+            // 현재 에디터 인스턴스 가져오기
+            const quill = this.quill;
+            
+            // 현재 선택된 텍스트 가져오기
+            const selectedText = quill.getText(range.index, range.length);
+            
+            // 코드 블록으로 변환
+            quill.format('code-block', true);
+          }
+        },
+        // 코드 블록 해제 단축키 (Ctrl+Shift+N)
+        'remove code block': {
+          key: 'N',
+          shortKey: true,
+          shiftKey: true,
+          handler: function(range) {
+            const quill = this.quill;
+            quill.format('code-block', false);
+          }
+        }
+      }
     }
   }), []);
 
