@@ -10,31 +10,37 @@ import {
   ListItem,
   ListItemText,
   TextField,
-  Typography
-  
+  Typography,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Divider
 } from '@mui/material';
-import { Add, CheckCircle, Delete, Edit, South } from '@mui/icons-material';
+import { Add, CheckCircle, Delete, Edit, FilterList } from '@mui/icons-material';
 import { API, getApiUrl } from "../../util/constant";
 import { api } from '../../api/client';
 import { useStore } from '../../redux/store/store';
-
 
 const ToDoList = () => {
   const [originalTodos, setOriginalTodos] = useState([]);
   const [todos, setTodos] = useState([]);
   const [input, setInput] = useState('');
   const [filter, setFilter] = useState('all');
-
-  const [editingId, setEditingId] = useState(null); // 수정 중인 todo Id
-  const [editText, setEditText] = useState(''); // 수정할 텍스트
-
+  const [departmentFilter, setDepartmentFilter] = useState('all'); // 부서 필터 상태 추가
+  
+  const [editingId, setEditingId] = useState(null);
+  const [editText, setEditText] = useState('');
+  
   const [isLoading, setIsLoading] = useState(true);
-
+  const [departments, setDepartments] = useState([]); // 부서 목록
+  const [users, setUsers] = useState([]); // 사용자 목록
+  
   const { userId, setUserId } = useStore();
-
 
   const MAX_CHANGES = 15;
   
+  // 컴포넌트가 언마운트될 때 변경사항 저장
   useEffect(() => {
     const handleBeforeUnload = () => {
       const changes = calculateChange(originalTodos, todos);
@@ -52,27 +58,37 @@ const ToDoList = () => {
     };
   }, [todos, originalTodos]);
 
+  // todos 변경 시 변경사항 확인
   useEffect(() => {
     if(!isLoading && todos.length > 0) {
       checkAndSaveChanges();
     }
   }, [todos]);
 
+  // 초기 데이터 로드
   useEffect(() => {
-    const fetchTodos = async () => {
+    const fetchInitialData = async () => {
       try {
-        const response = await api.get(`${getApiUrl(API.TODOS)}`).json();
-
-        setOriginalTodos(response);
-        setTodos(response);
+        // Todo 데이터 로드
+        const todosResponse = await api.get(`${getApiUrl(API.TODOS)}`).json();
+        setOriginalTodos(todosResponse);
+        setTodos(todosResponse);
+        
+        // 부서 정보 로드
+        const departmentsResponse = await api.get(`${getApiUrl(API.USERS)}/departments`).json();
+        setDepartments(departmentsResponse);
+        
+        // 모든 사용자 정보 로드
+        const usersResponse = await api.get(`${getApiUrl(API.USERS)}`).json();
+        setUsers(usersResponse);
       } catch(error){
-        console.error(error);
+        console.error('데이터 로드 중 오류 발생:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchTodos();
+    fetchInitialData();
 
     // 5분마다 변경사항 저장
     const autoSaveInterval = setInterval(async () => {
@@ -95,7 +111,7 @@ const ToDoList = () => {
     return async () => {
       clearInterval(autoSaveInterval);
       const changes = calculateChange(originalTodos, todos);
-      if(changes.length > 0) {
+      if(changes.updated.length > 0 || changes.deleted.length > 0) {
         try {
           await api.post(`${getApiUrl(API.TODOS)}`, {
             json: changes
@@ -105,7 +121,6 @@ const ToDoList = () => {
         }
       }
     };
-
   }, []);
 
   // todo 변경사항 검사 함수
@@ -167,13 +182,16 @@ const ToDoList = () => {
 
     const newTodo = {
       content: input,
-      completed: false
+      completed: false,
+      userId: userId // 현재 사용자 ID 추가
     };
 
     try {
       const savedTodo = await api.post(`${getApiUrl(API.TODOS)}`, {
         json: newTodo
       }).json();
+
+      console.log(savedTodo);
 
       setTodos(currentTodos => [...currentTodos, savedTodo]);
       setOriginalTodos(currentOriginalTodos => [...currentOriginalTodos, savedTodo]);
@@ -184,57 +202,91 @@ const ToDoList = () => {
     }
   }
 
-  // 완료 / 미완료 필터링
-  const filteredTodos = (() => {
-    if(filter === 'all') {
-      return todos;
-    } else if(filter === 'completed') {
-      return todos.filter((todo) => todo.completed);
-    } else {
-      return todos.filter((todo) => !todo.completed);
+  // 부서별로 사용자 필터링
+  const getDepartmentUsers = (department) => {
+    if (department === 'all') {
+      return users;
     }
+    return users.filter(user => user.department === department);
+  };
+
+  // 필터링된 할 일 목록
+  const filteredTodos = (() => {
+    // 먼저 완료/미완료 필터 적용
+    let filtered = todos;
+    if(filter === 'completed') {
+      filtered = todos.filter((todo) => todo.completed);
+    } else if(filter === 'pending') {
+      filtered = todos.filter((todo) => !todo.completed);
+    }
+    
+    // 그 다음 부서 필터 적용
+    if (departmentFilter !== 'all') {
+      const departmentUserIds = getDepartmentUsers(departmentFilter).map(user => user.id);
+      filtered = filtered.filter(todo => departmentUserIds.includes(todo.userId));
+    }
+    
+    return filtered;
   })();
+
+  // 부서 필터 변경 핸들러
+  const handleDepartmentFilterChange = (event) => {
+    setDepartmentFilter(event.target.value);
+  };
 
   // todo 삭제
   const handleDelete = (index) => {
-    const updatedTodos = todos.filter((_, i) => i !== index);
+    const todoToDelete = filteredTodos[index];
+    const updatedTodos = todos.filter(todo => todo.id !== todoToDelete.id);
     setTodos(updatedTodos);
     checkAndSaveChanges();
-
   }
 
   // 완료 / 미완료 토글
   const handleToggleComplete = (index) => {
-    const updatedTodos = todos.map((todo, i) => {
-      if(i === index) {
-        const updated = {...todo, completed: !todo.completed};
-        return updated;
+    const todoToToggle = filteredTodos[index];
+    const updatedTodos = todos.map(todo => {
+      if(todo.id === todoToToggle.id) {
+        return {...todo, completed: !todo.completed};
       }
-      return {...todo};
+      return todo;
     });
     setTodos(updatedTodos);
   }
 
   // 수정 시작
   const handleStartEdit = (todo, index) => {
-    setEditingId(index);
-    setEditText(todo.content);
+    const todoToEdit = filteredTodos[index];
+    setEditingId(todoToEdit.id);
+    setEditText(todoToEdit.content);
   }
 
   // 수정 완료
   const handleFinishEdit = (index) => {
-    const updatedTodos = todos.map((todo, i) => {
-      if(i === index) {
-        const updated = {...todo, content: editText};
-        return updated;
+    const todoToUpdate = filteredTodos[index];
+    const updatedTodos = todos.map(todo => {
+      if(todo.id === todoToUpdate.id) {
+        return {...todo, content: editText};
       }
-      return {...todo};
+      return todo;
     });
 
     setTodos(updatedTodos);
     setEditingId(null);
     setEditText('');
   }
+
+  // 사용자 이름 가져오기
+  const getUserName = (userId) => {
+    const user = users.find(u => u.id === userId);
+    return user ? user.name : 'Unknown';
+  };
+
+  // 사용자 부서 가져오기
+  const getUserDepartment = (userId) => {
+    const user = users.find(u => u.id === userId);
+    return user ? user.department : 'Unknown';
+  };
 
   return (
     <Box sx={{
@@ -319,8 +371,8 @@ const ToDoList = () => {
             textTransform: 'none',
             borderRadius: 2,
             px: 3,
-            minWidth: '100px',  // 최소 너비 추가
-            whiteSpace: 'nowrap',  // 텍스트 줄바꿈 방지
+            minWidth: '100px',
+            whiteSpace: 'nowrap',
             '&:hover': {
               bgcolor: '#1565C0'
             }
@@ -330,54 +382,88 @@ const ToDoList = () => {
         </Button>
       </Box>
       
-      {/* 필터 버튼 */}
-      <Box
-        sx={{
-          mb: 4,
-          display: 'flex',
-          justifyContent: 'center',
-          gap: 1
-        }}
-      >
-        <Chip 
-          label="전체"
-          onClick={() => setFilter('all')}
+      {/* 필터 섹션 */}
+      <Box sx={{ mb: 4 }}>
+        {/* 완료 상태 필터 */}
+        <Box
           sx={{
-            bgcolor: filter === 'all' ? '#1976D2' : 'transparent',
-            color: filter === 'all' ? 'white' : '#666',
-            border: '1px solid',
-            borderColor: filter === 'all' ? '#1976D2' : '#E0E0E0',
-            '&:hover': {
-              bgcolor: filter === 'all' ? '#1565C0' : 'rgba(0,0,0,0.04)'
-            }
+            mb: 2,
+            display: 'flex',
+            justifyContent: 'center',
+            gap: 1
           }}
-        />
-        <Chip
-          label="완료됨"
-          onClick={() => setFilter('completed')}
-          sx={{
-            bgcolor: filter === 'completed' ? '#1976D2' : 'transparent',
-            color: filter === 'completed' ? 'white' : '#666',
-            border: '1px solid',
-            borderColor: filter === 'completed' ? '#1976D2' : '#E0E0E0',
-            '&:hover': {
-              bgcolor: filter === 'completed' ? '#1565C0' : 'rgba(0,0,0,0.04)'
-            }
-          }}
-        />
-        <Chip
-          label="미완료"
-          onClick={() => setFilter('pending')}
-          sx={{
-            bgcolor: filter === 'pending' ? '#1976D2' : 'transparent',
-            color: filter === 'pending' ? 'white' : '#666',
-            border: '1px solid',
-            borderColor: filter === 'pending' ? '#1976D2' : '#E0E0E0',
-            '&:hover': {
-              bgcolor: filter === 'pending' ? '#1565C0' : 'rgba(0,0,0,0.04)'
-            }
-          }}
-        />
+        >
+          <Chip 
+            label="전체"
+            onClick={() => setFilter('all')}
+            sx={{
+              bgcolor: filter === 'all' ? '#1976D2' : 'transparent',
+              color: filter === 'all' ? 'white' : '#666',
+              border: '1px solid',
+              borderColor: filter === 'all' ? '#1976D2' : '#E0E0E0',
+              '&:hover': {
+                bgcolor: filter === 'all' ? '#1565C0' : 'rgba(0,0,0,0.04)'
+              }
+            }}
+          />
+          <Chip
+            label="완료됨"
+            onClick={() => setFilter('completed')}
+            sx={{
+              bgcolor: filter === 'completed' ? '#1976D2' : 'transparent',
+              color: filter === 'completed' ? 'white' : '#666',
+              border: '1px solid',
+              borderColor: filter === 'completed' ? '#1976D2' : '#E0E0E0',
+              '&:hover': {
+                bgcolor: filter === 'completed' ? '#1565C0' : 'rgba(0,0,0,0.04)'
+              }
+            }}
+          />
+          <Chip
+            label="미완료"
+            onClick={() => setFilter('pending')}
+            sx={{
+              bgcolor: filter === 'pending' ? '#1976D2' : 'transparent',
+              color: filter === 'pending' ? 'white' : '#666',
+              border: '1px solid',
+              borderColor: filter === 'pending' ? '#1976D2' : '#E0E0E0',
+              '&:hover': {
+                bgcolor: filter === 'pending' ? '#1565C0' : 'rgba(0,0,0,0.04)'
+              }
+            }}
+          />
+        </Box>
+        
+        {/* 부서 필터 추가 */}
+        <Divider sx={{ my: 2 }} />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <FilterList color="primary" />
+          <Typography variant="body1" fontWeight={500} color="#666">
+            부서별 필터:
+          </Typography>
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <Select
+              value={departmentFilter}
+              onChange={handleDepartmentFilterChange}
+              displayEmpty
+              sx={{
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#E0E0E0'
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#BDBDBD'
+                }
+              }}
+            >
+              <MenuItem value="all">전체 부서</MenuItem>
+              {departments.map((dept, index) => (
+                <MenuItem key={index} value={dept}>
+                  {dept}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
       </Box>
  
       {/* To-Do 목록 */}
@@ -389,12 +475,14 @@ const ToDoList = () => {
           ) : (
           filteredTodos.length === 0 ? (
             <Typography sx={{ textAlign: 'center', color: '#666' }}>
-              할 일이 없습니다.
+              {departmentFilter !== 'all' 
+                ? `${departmentFilter} 부서에 해당하는 할 일이 없습니다.` 
+                : '할 일이 없습니다.'}
             </Typography>
           ) : (
             filteredTodos.map((todo, index) => (
               <ListItem
-                key={index}
+                key={todo.id}
                 onClick={(event) => {
                   // secondaryAction 영역 클릭은 제외
                   if (!event.target.closest('.MuiListItemSecondaryAction-root')) {
@@ -414,7 +502,7 @@ const ToDoList = () => {
                 }}
                 secondaryAction={
                   <Box>
-                    {editingId === index ? (
+                    {editingId === todo.id ? (
                       <IconButton onClick={() => handleFinishEdit(index)}>
                         <CheckCircle sx={{color: '#4CAF50'}} />
                       </IconButton>
@@ -439,39 +527,59 @@ const ToDoList = () => {
                     }
                   }}
                 />
-                {editingId === index ? (
-                  <TextField
-                    fullWidth
-                    value={editText}
-                    onChange={(e) => setEditText(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleFinishEdit(index)}
-                    autoFocus
-                    size="small"
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        '& fieldset': {
-                          borderColor: '#E0E0E0'
+                <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                  {editingId === todo.id ? (
+                    <TextField
+                      fullWidth
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleFinishEdit(index)}
+                      autoFocus
+                      size="small"
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          '& fieldset': {
+                            borderColor: '#E0E0E0'
+                          },
+                          '&:hover fieldset': {
+                            borderColor: '#BDBDBD'
+                          }
                         },
-                        '&:hover fieldset': {
-                          borderColor: '#BDBDBD'
+                        '& .MuiInputBase-input': {
+                          color: '#333'
                         }
-                      },
-                      '& .MuiInputBase-input': {
-                        color: '#333'
-                      }
-                    }}
-                  />
-                ) : (
-                  <ListItemText
-                    primary={todo.content}
-                    sx={{
-                      '& .MuiTypography-root': {
-                        textDecoration: todo.completed ? 'line-through' : 'none',
-                        color: todo.completed ? '#9E9E9E' : '#333'
-                      }
-                    }}
-                  />
-                )}
+                      }}
+                    />
+                  ) : (
+                    <>
+                      <ListItemText
+                        primary={todo.content}
+                        sx={{
+                          '& .MuiTypography-root': {
+                            textDecoration: todo.completed ? 'line-through' : 'none',
+                            color: todo.completed ? '#9E9E9E' : '#333'
+                          }
+                        }}
+                      />
+                      {/* 담당자 정보 표시 */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
+                        <Typography variant="caption" sx={{ color: '#666', mr: 1 }}>
+                          담당: {todo.name}
+                        </Typography>
+                        <Chip 
+                          label={todo.department} 
+                          size="small" 
+                          sx={{ 
+                            height: 20, 
+                            fontSize: '0.65rem',
+                            bgcolor: '#E3F2FD',
+                            color: '#1976D2' 
+                          }} 
+                        />
+                      </Box>
+                    </>
+                  )}
+                </Box>
               </ListItem>
             ))))}
       </List>
