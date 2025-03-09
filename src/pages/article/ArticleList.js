@@ -37,18 +37,22 @@ const ArticleList = ({ posts, setPosts }) => {
       const newProfileImages = { ...profileImages };
       const newLoadingImages = { ...loadingImages };
       
-      await Promise.all(uniqueUserIds.map(async (writerId) => {
-        if (profileImages[writerId]) return;
+      for (const writerId of uniqueUserIds) {
+        if (profileImages[writerId]) continue;
         
         try {
           newLoadingImages[writerId] = true;
           const token = localStorage.getItem('jwt');
+          
+          // 수정된 부분: 명확하게 writerId를 URL에 포함하고 credentials 설정 제거
           const response = await ky.get(`${userPath}/profile?userId=${writerId}`, {
             headers: token ? {
               "Authorization": `Bearer ${token}`
-            } : {},
-            credentials: 'include'
+            } : {}
           }).json();
+          
+          // 응답 구조 로깅하여 디버깅
+          console.log(`프로필 응답 (${writerId}):`, response);
           
           if (response && response.imageUrl) {
             newProfileImages[writerId] = response.imageUrl;
@@ -58,7 +62,7 @@ const ArticleList = ({ posts, setPosts }) => {
         } finally {
           newLoadingImages[writerId] = false;
         }
-      }));
+      }
       
       setProfileImages(newProfileImages);
       setLoadingImages(newLoadingImages);
@@ -92,7 +96,7 @@ const ArticleList = ({ posts, setPosts }) => {
     e.stopPropagation();
     navigator("/write", {
       state: {
-        articleId: selectedArticleId,  // 여기서 키를 articleId로 변경
+        articleId: selectedArticleId,
         prevTitle: prevTitle,
         prevContent: prevContent,
         mode,
