@@ -26,8 +26,11 @@ const ToDoList = () => {
   const [originalTodos, setOriginalTodos] = useState([]);
   const [todos, setTodos] = useState([]);
   const [input, setInput] = useState('');
-  const [filter, setFilter] = useState('all');
-  const [departmentFilter, setDepartmentFilter] = useState('all'); // 부서 필터 상태 추가
+  
+  // 필터 상태를 두 개로 분리
+  const [scopeFilter, setScopeFilter] = useState('all'); // 전체/내 업무
+  const [statusFilter, setStatusFilter] = useState('all'); // 전체/미완료/완료
+  const [departmentFilter, setDepartmentFilter] = useState('all'); // 부서 필터
   
   const [editingId, setEditingId] = useState(null);
   const [editText, setEditText] = useState('');
@@ -212,15 +215,21 @@ const ToDoList = () => {
 
   // 필터링된 할 일 목록
   const filteredTodos = (() => {
-    // 먼저 완료/미완료 필터 적용
     let filtered = todos;
-    if(filter === 'completed') {
-      filtered = todos.filter((todo) => todo.completed);
-    } else if(filter === 'pending') {
-      filtered = todos.filter((todo) => !todo.completed);
+    
+    // 1. 업무 범위 필터 적용 (전체 또는 내 업무)
+    if (scopeFilter === 'my-tasks') {
+      filtered = filtered.filter(todo => todo.userId === userId);
     }
     
-    // 그 다음 부서 필터 적용
+    // 2. 상태 필터 적용 (전체, 완료됨, 미완료)
+    if (statusFilter === 'completed') {
+      filtered = filtered.filter(todo => todo.completed);
+    } else if (statusFilter === 'pending') {
+      filtered = filtered.filter(todo => !todo.completed);
+    }
+    
+    // 3. 부서 필터 적용
     if (departmentFilter !== 'all') {
       const departmentUserIds = getDepartmentUsers(departmentFilter).map(user => user.id);
       filtered = filtered.filter(todo => departmentUserIds.includes(todo.userId));
@@ -286,6 +295,19 @@ const ToDoList = () => {
   const getUserDepartment = (userId) => {
     const user = users.find(u => u.id === userId);
     return user ? user.department : 'Unknown';
+  };
+
+  // 필터 상태에 따른 메시지 생성
+  const getEmptyStateMessage = () => {
+    const scopeText = scopeFilter === 'my-tasks' ? '내 업무' : '전체 업무';
+    const statusText = statusFilter === 'completed' ? '완료된' : 
+                       statusFilter === 'pending' ? '미완료' : '';
+    
+    if (departmentFilter !== 'all') {
+      return `${departmentFilter} 부서의 ${statusText} ${scopeText}가 없습니다.`;
+    }
+    
+    return `${statusText} ${scopeText}가 없습니다.`;
   };
 
   return (
@@ -384,57 +406,90 @@ const ToDoList = () => {
       
       {/* 필터 섹션 */}
       <Box sx={{ mb: 4 }}>
-        {/* 완료 상태 필터 */}
-        <Box
-          sx={{
-            mb: 2,
-            display: 'flex',
-            justifyContent: 'center',
-            gap: 1
-          }}
-        >
-          <Chip 
-            label="전체"
-            onClick={() => setFilter('all')}
-            sx={{
-              bgcolor: filter === 'all' ? '#1976D2' : 'transparent',
-              color: filter === 'all' ? 'white' : '#666',
-              border: '1px solid',
-              borderColor: filter === 'all' ? '#1976D2' : '#E0E0E0',
-              '&:hover': {
-                bgcolor: filter === 'all' ? '#1565C0' : 'rgba(0,0,0,0.04)'
-              }
-            }}
-          />
-          <Chip
-            label="완료됨"
-            onClick={() => setFilter('completed')}
-            sx={{
-              bgcolor: filter === 'completed' ? '#1976D2' : 'transparent',
-              color: filter === 'completed' ? 'white' : '#666',
-              border: '1px solid',
-              borderColor: filter === 'completed' ? '#1976D2' : '#E0E0E0',
-              '&:hover': {
-                bgcolor: filter === 'completed' ? '#1565C0' : 'rgba(0,0,0,0.04)'
-              }
-            }}
-          />
-          <Chip
-            label="미완료"
-            onClick={() => setFilter('pending')}
-            sx={{
-              bgcolor: filter === 'pending' ? '#1976D2' : 'transparent',
-              color: filter === 'pending' ? 'white' : '#666',
-              border: '1px solid',
-              borderColor: filter === 'pending' ? '#1976D2' : '#E0E0E0',
-              '&:hover': {
-                bgcolor: filter === 'pending' ? '#1565C0' : 'rgba(0,0,0,0.04)'
-              }
-            }}
-          />
+        {/* 업무 범위 필터 (전체/내 업무) */}
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="body2" fontWeight={500} color="#666" sx={{ mb: 1 }}>
+            업무 범위:
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Chip 
+              label="전체 업무"
+              onClick={() => setScopeFilter('all')}
+              sx={{
+                bgcolor: scopeFilter === 'all' ? '#1976D2' : 'transparent',
+                color: scopeFilter === 'all' ? 'white' : '#666',
+                border: '1px solid',
+                borderColor: scopeFilter === 'all' ? '#1976D2' : '#E0E0E0',
+                '&:hover': {
+                  bgcolor: scopeFilter === 'all' ? '#1565C0' : 'rgba(0,0,0,0.04)'
+                }
+              }}
+            />
+            <Chip
+              label="내 업무"
+              onClick={() => setScopeFilter('my-tasks')}
+              sx={{
+                bgcolor: scopeFilter === 'my-tasks' ? '#1976D2' : 'transparent',
+                color: scopeFilter === 'my-tasks' ? 'white' : '#666',
+                border: '1px solid',
+                borderColor: scopeFilter === 'my-tasks' ? '#1976D2' : '#E0E0E0',
+                '&:hover': {
+                  bgcolor: scopeFilter === 'my-tasks' ? '#1565C0' : 'rgba(0,0,0,0.04)'
+                }
+              }}
+            />
+          </Box>
+        </Box>
+
+        {/* 상태 필터 (전체/완료/미완료) */}
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="body2" fontWeight={500} color="#666" sx={{ mb: 1 }}>
+            상태:
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Chip 
+              label="전체"
+              onClick={() => setStatusFilter('all')}
+              sx={{
+                bgcolor: statusFilter === 'all' ? '#1976D2' : 'transparent',
+                color: statusFilter === 'all' ? 'white' : '#666',
+                border: '1px solid',
+                borderColor: statusFilter === 'all' ? '#1976D2' : '#E0E0E0',
+                '&:hover': {
+                  bgcolor: statusFilter === 'all' ? '#1565C0' : 'rgba(0,0,0,0.04)'
+                }
+              }}
+            />
+            <Chip
+              label="완료됨"
+              onClick={() => setStatusFilter('completed')}
+              sx={{
+                bgcolor: statusFilter === 'completed' ? '#1976D2' : 'transparent',
+                color: statusFilter === 'completed' ? 'white' : '#666',
+                border: '1px solid',
+                borderColor: statusFilter === 'completed' ? '#1976D2' : '#E0E0E0',
+                '&:hover': {
+                  bgcolor: statusFilter === 'completed' ? '#1565C0' : 'rgba(0,0,0,0.04)'
+                }
+              }}
+            />
+            <Chip
+              label="미완료"
+              onClick={() => setStatusFilter('pending')}
+              sx={{
+                bgcolor: statusFilter === 'pending' ? '#1976D2' : 'transparent',
+                color: statusFilter === 'pending' ? 'white' : '#666',
+                border: '1px solid',
+                borderColor: statusFilter === 'pending' ? '#1976D2' : '#E0E0E0',
+                '&:hover': {
+                  bgcolor: statusFilter === 'pending' ? '#1565C0' : 'rgba(0,0,0,0.04)'
+                }
+              }}
+            />
+          </Box>
         </Box>
         
-        {/* 부서 필터 추가 */}
+        {/* 부서 필터 */}
         <Divider sx={{ my: 2 }} />
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <FilterList color="primary" />
@@ -475,9 +530,7 @@ const ToDoList = () => {
           ) : (
           filteredTodos.length === 0 ? (
             <Typography sx={{ textAlign: 'center', color: '#666' }}>
-              {departmentFilter !== 'all' 
-                ? `${departmentFilter} 부서에 해당하는 할 일이 없습니다.` 
-                : '할 일이 없습니다.'}
+              {getEmptyStateMessage()}
             </Typography>
           ) : (
             filteredTodos.map((todo, index) => (
