@@ -57,7 +57,7 @@ export const uploadImage = (file, userId, onProgress) => {
       const result = await upload.done();
       
       // 서명된 URL 생성
-      const signedUrl = await getPresignedUrl(key);
+      const signedUrl = await getPresignedUrl(key, 31536000); // 1년
       
       resolve({
         url: signedUrl, // 서명된 URL 사용
@@ -100,7 +100,7 @@ export const uploadProfileImage = (file, userId, onProgress) => {
       const result = await upload.done();
       
       // 서명된 URL 생성 (캐시 방지를 위한 타임스탬프 추가)
-      const signedUrl = await getPresignedUrl(key);
+      const signedUrl = await getPresignedUrl(key, 31536000); // 1년
       
       resolve({
         url: signedUrl,
