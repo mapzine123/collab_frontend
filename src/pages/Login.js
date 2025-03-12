@@ -44,8 +44,7 @@ const Login = () => {
       setAuthenticated(true);
       setUserImagePath(userData.profileImagePath);
 
-      console.log(userId)
-      
+      sessionStorage.setItem("userId", JSON.stringify(userData.id));
 
       // 로그인 성공 시 index.js로 이동
       navigate("/");

@@ -92,7 +92,6 @@ const ArticleList = ({ posts, setPosts }) => {
     prevContent,
     mode
   ) => {
-    console.log(selectedArticleId)
     e.stopPropagation();
     navigator("/write", {
       state: {

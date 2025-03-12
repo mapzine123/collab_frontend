@@ -14,8 +14,6 @@ const MessageInput = ({roomId, onSendMessage}) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-
-        console.log('보낸 메시지 : ', message);
         if(!message.trim() || !roomId) {
             return;
         }

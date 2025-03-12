@@ -40,3 +40,12 @@ export const getMessages = async (roomId) => {
     }
 }
 
+export const getChannelMembers = async (channelId) => {
+  const response = await fetch(`/api/channels/${channelId}/members`, {
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('jwt')}`
+    }
+  });
+  if (!response.ok) throw new Error('Failed to fetch channel members');
+  return response.json();
+};
