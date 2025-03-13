@@ -3,11 +3,12 @@ import PeopleIcon from '@mui/icons-material/People';
 import MessageInput from "./MessageInput";
 import { useEffect, useRef, useState } from "react";
 import ChatWebSocket from "./ChatWebSocket";
-import { getMessages, getChannelMembers } from "./chatApi";
+import { getMessages, getChannelMembers, api } from "./chatApi";
 import { useStore } from "../../redux/store/store";
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import CloseIcon from '@mui/icons-material/Close';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
+import { chatPath, chattingPath } from "../../util/constant";
 
 const ChatArea = ({currentChannel}) => {
 // 스크롤을 위한 ref 추가
@@ -132,24 +133,29 @@ const ChatArea = ({currentChannel}) => {
 
     // 채널 멤버십 확인 함수
     const checkMembership = async () => {
-        if (!currentChannel?.id || !userId) return;
-        
-        try {
-            // 실제 API 호출
-            // const result = await checkChannelMembership(currentChannel.id, userId);
-            setIsMember(true);
+        console.log(currentChannel.id);
+        const token = localStorage.getItem('jwt'); 
 
-            // 임시로 로직 구현 (API 구현 전)
-            // 멤버 목록에서 현재 사용자 ID가 있는지 확인
-            const membersList = await getChannelMembers(currentChannel.id);
-            const isCurrentUserMember = membersList.some(member => member.id === userId);
+        if (!currentChannel?.id || !userId) return;
+        try {
+            // API 호출
+            console.log(chatPath + `/${currentChannel.id}`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                }
+            });
+            const members = await api.get(`chats/${currentChannel.id}`).json();
+            console.log("members :", members);
+            const isCurrentUserMember = members.some(member => member.id === userId);
             setIsMember(isCurrentUserMember);
-            setMembers(membersList);
+            setMembers(members);
         } catch (error) {
             console.error("멤버십 확인 실패 : ", error);
             // setIsMember(false);
         }
     };
+
 
     // 수정된 enterRoom 함수
     const enterRoom = (roomId, userId) => {
@@ -242,15 +248,15 @@ const ChatArea = ({currentChannel}) => {
                     <IconButton onClick={toggleMembersList} size="small">
                         <PeopleIcon />
                         <Typography variant="body2" sx={{ ml: 0.5 }}>
-                        {members.length}
+                            {members.length}
                         </Typography>
                     </IconButton>
                     </Tooltip>
                 </Box>
-                </Paper>
+            </Paper>
 
-                {/* Messages Area */}
-                <Box
+            {/* Messages Area */}
+            <Box
                 sx={{
                     flexGrow: 1,
                     overflow: 'auto',
@@ -273,8 +279,8 @@ const ChatArea = ({currentChannel}) => {
 
                 {/* Message Input */}
                 <MessageInput 
-                roomId={currentChannel?.id}
-                onSendMessage={handleSendMessage}
+                    roomId={currentChannel?.id}
+                    onSendMessage={handleSendMessage}
                 />
             </Box>
 
@@ -356,14 +362,18 @@ const ChatArea = ({currentChannel}) => {
                         {member.id === userId && " (나)"}
                         </Typography>
                     </Box>
+                    <Typography variant="body2" color="text.secondary">
+                        {member.department || "부서 없음"}
+                    </Typography>
+                    </Box>
+                ))}
                 </Box>
-            ))}
-            </Box>
+
 
             {/* Leave Channel Button */}
             <Box
             sx={{
-                p: 2,
+                p: 2.5,
                 borderTop: '1px solid #e0e0e0',
                 display: 'flex',
                 justifyContent: 'center'
