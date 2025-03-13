@@ -1,23 +1,17 @@
-import { Box, Paper, Typography, Divider, Avatar, AvatarGroup, Tooltip, IconButton } from "@mui/material";
+import { Box, Paper, Typography, Divider, Avatar, AvatarGroup, Tooltip, IconButton, Button } from "@mui/material";
 import PeopleIcon from '@mui/icons-material/People';
 import MessageInput from "./MessageInput";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ChatWebSocket from "./ChatWebSocket";
 import { getMessages, getChannelMembers } from "./chatApi";
 import { useStore } from "../../redux/store/store";
-
-// Add getChannelMembers to your chatApi.js if not already there
-// export const getChannelMembers = async (channelId) => {
-//   const response = await fetch(`/api/channels/${channelId}/members`, {
-//     headers: {
-//       'Authorization': `Bearer ${localStorage.getItem('jwt')}`
-//     }
-//   });
-//   if (!response.ok) throw new Error('Failed to fetch channel members');
-//   return response.json();
-// };
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import CloseIcon from '@mui/icons-material/Close';
+import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 
 const ChatArea = ({currentChannel}) => {
+// 스크롤을 위한 ref 추가
+    const messagesEndRef = useRef(null);
     const [messages, setMessages] = useState([]);
     const [members, setMembers] = useState([]);
     const [showMembersList, setShowMembersList] = useState(false);
@@ -26,6 +20,14 @@ const ChatArea = ({currentChannel}) => {
     const { userId } = useStore();
     const [webSocket, setWebSocket] = useState(null);
     const [isConnected, setIsConnected] = useState(false);
+
+    // 메시지가 바뀔 때마다 스크롤을 아래로 이동
+    useEffect(() => {
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+        }
+    }, [messages]); // 메시지가 변경될 때마다 실행
+
 
     useEffect(() => {
         const ws = new ChatWebSocket(token);
@@ -135,7 +137,7 @@ const ChatArea = ({currentChannel}) => {
         try {
             // 실제 API 호출
             // const result = await checkChannelMembership(currentChannel.id, userId);
-            // setIsMember(result.isMember);
+            setIsMember(true);
 
             // 임시로 로직 구현 (API 구현 전)
             // 멤버 목록에서 현재 사용자 ID가 있는지 확인
@@ -145,7 +147,7 @@ const ChatArea = ({currentChannel}) => {
             setMembers(membersList);
         } catch (error) {
             console.error("멤버십 확인 실패 : ", error);
-            setIsMember(false);
+            // setIsMember(false);
         }
     };
 
@@ -201,130 +203,202 @@ const ChatArea = ({currentChannel}) => {
     };
 
     return (
+    <Box
+        component="main"
+        sx={{
+            display: 'flex',
+            height: '100%',
+            width: '100%',
+        }}
+    >
+        {/* Main Chat Area */}
         <Box
-            component="main"
             sx={{
-                flexGrow: 1,
-                p: 3,
-                ml: 0,
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                borderLeft: '1px solid #e0e0e0'
+            flexGrow: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%',
+            borderRight: '1px solid #e0e0e0',
             }}
         >
+            {/* Channel Header */}
             <Paper
-                elevation={0}
-                sx={{
-                    p: 2,
-                    backgroundColor: '#ffffff',
-                    borderBottom: 1,
-                    borderColor: 'divider',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                }}
+            elevation={0}
+            sx={{
+                p: 2,
+                backgroundColor: '#ffffff',
+                borderBottom: 1,
+                borderColor: 'divider',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+            }}
             >
-                {/* 채널 이름 (왼쪽) */}
                 <Typography variant="h6">{currentChannel?.name}</Typography>
                 
-                {/* 채널 멤버 (오른쪽) */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <AvatarGroup max={4} sx={{ '& .MuiAvatar-root': { width: 32, height: 32 } }}>
-                        {members.slice(0, 4).map((member) => (
-                            <Tooltip key={member.id} title={member.name || member.username}>
-                                <Avatar alt={member.name || member.username}>
-                                    {(member.name || member.username).charAt(0)}
-                                </Avatar>
-                            </Tooltip>
-                        ))}
-                    </AvatarGroup>
+                {/* Show/Hide Member List on mobile */}
+                <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
                     <Tooltip title="채널 멤버 목록">
-                        <IconButton onClick={toggleMembersList} size="small">
-                            <PeopleIcon />
-                            <Typography variant="body2" sx={{ ml: 0.5 }}>
-                                {members.length}
-                            </Typography>
-                        </IconButton>
+                    <IconButton onClick={toggleMembersList} size="small">
+                        <PeopleIcon />
+                        <Typography variant="body2" sx={{ ml: 0.5 }}>
+                        {members.length}
+                        </Typography>
+                    </IconButton>
                     </Tooltip>
                 </Box>
-            </Paper>
-
-            {/* 멤버 목록 패널 - 토글되어 표시됨 */}
-            {showMembersList && (
-                <Paper
-                    elevation={0}
-                    sx={{
-                        p: 2,
-                        backgroundColor: '#f9f9f9',
-                        borderBottom: 1,
-                        borderColor: 'divider',
-                        maxHeight: '200px',
-                        overflow: 'auto'
-                    }}
-                >
-                    <Typography variant="subtitle1" sx={{ mb: 1 }}>채널 멤버 ({members.length}명)</Typography>
-                    <Divider sx={{ mb: 1 }} />
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                        {members.map((member) => (
-                            <Box 
-                                key={member.id} 
-                                sx={{ 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    gap: 1,
-                                    p: 1,
-                                    borderRadius: 1,
-                                    '&:hover': { backgroundColor: '#f0f0f0' }
-                                }}
-                            >
-                                <Avatar 
-                                    alt={member.name || member.username}
-                                    sx={{ width: 28, height: 28 }}
-                                >
-                                    {(member.name || member.username).charAt(0)}
-                                </Avatar>
-                                <Typography variant="body2">
-                                    {member.name || member.username}
-                                    {member.id === userId && " (나)"}
-                                </Typography>
-                            </Box>
-                        ))}
-                    </Box>
                 </Paper>
-            )}
 
-            <Box
+                {/* Messages Area */}
+                <Box
                 sx={{
                     flexGrow: 1,
                     overflow: 'auto',
                     my: 2,
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: 2
+                    gap: 2,
+                    px: 2
                 }}
-            >
-                {/* 메시지 영역*/}
+                >
                 {messages.map((message) => (
                     <MessageBubble 
-                        key={message.id}
-                        message={message}
-                        isMyMessage={message.senderId === userId}
+                    key={message.id}
+                    message={message}
+                    isMyMessage={message.senderId === userId}
                     />
                 ))}
-            </Box>
+                <div ref={messagesEndRef} />
+                </Box>
 
-            <MessageInput 
+                {/* Message Input */}
+                <MessageInput 
                 roomId={currentChannel?.id}
                 onSendMessage={handleSendMessage}
-            />
+                />
+            </Box>
+
+            {/* Right Sidebar - Member List */}
+            <Box
+                sx={{
+                width: { xs: '100%', md: 280 },
+                height: '100%',
+                display: { xs: showMembersList ? 'flex' : 'none', md: 'flex' },
+                flexDirection: 'column',
+                backgroundColor: '#f9f9f9',
+                position: { xs: 'absolute', md: 'relative' },
+                right: 0,
+                zIndex: { xs: 1200, md: 1 },
+                }}
+            >
+                {/* Member List Header */}
+                <Box
+                sx={{
+                    p: 2,
+                    borderBottom: '1px solid #e0e0e0',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    backgroundColor: '#f0f0f0'
+                }}
+                >
+                <Typography variant="subtitle1">채널 멤버 ({members.length}명)</Typography>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                    {/* Add Member Button */}
+                    <Tooltip title="멤버 추가">
+                    <IconButton size="small" color="primary">
+                        <PersonAddIcon fontSize="small" />
+                    </IconButton>
+                    </Tooltip>
+                    {/* Close Member List on Mobile */}
+                    <IconButton 
+                    size="small" 
+                    sx={{ display: { xs: 'flex', md: 'none' } }}
+                    onClick={toggleMembersList}
+                    >
+                    <CloseIcon fontSize="small" />
+                    </IconButton>
+                </Box>
+                </Box>
+
+                {/* Member List */}
+                <Box
+                sx={{
+                    flexGrow: 1,
+                    overflow: 'auto',
+                    p: 2,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 1
+                }}
+                >
+                {members.map((member) => (
+                    <Box 
+                    key={member.id} 
+                    sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'space-between',
+                        p: 1,
+                        borderRadius: 1,
+                        '&:hover': { backgroundColor: '#f0f0f0' }
+                    }}
+                    >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Avatar 
+                        alt={member.name || member.username}
+                        sx={{ width: 32, height: 32 }}
+                        >
+                        {(member.name || member.username).charAt(0)}
+                        </Avatar>
+                        <Typography variant="body2">
+                        {member.name || member.username}
+                        {member.id === userId && " (나)"}
+                        </Typography>
+                    </Box>
+                </Box>
+            ))}
+            </Box>
+
+            {/* Leave Channel Button */}
+            <Box
+            sx={{
+                p: 2,
+                borderTop: '1px solid #e0e0e0',
+                display: 'flex',
+                justifyContent: 'center'
+            }}
+            >
+            <Button 
+                variant="outlined" 
+                color="error" 
+                startIcon={<ExitToAppIcon />}
+                size="small"
+                fullWidth
+            >
+                채팅방 나가기
+            </Button>
+            </Box>
         </Box>
+    </Box>
     )
 }
 
 // 메세지 컴포넌트
 const MessageBubble = ({message, isMyMessage}) => {
     const isSystemMessage = message.type === 'ENTER' || message.type === 'LEAVE';
+
+    const formattedDate = new Date(message.createAt).toLocaleString('ko-KR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+    }).replace(/\. /g, '-').replace(/\./g, '');
+    
+
     return (
         <Box
             sx={{
@@ -359,7 +433,7 @@ const MessageBubble = ({message, isMyMessage}) => {
             </Typography>
             {!isSystemMessage && (
                 <Typography variant="caption" sx={{opacity: 0.7}}>
-                    {new Date(message.timestamp).toLocaleTimeString()}
+                    {formattedDate}
                 </Typography>
             )}
         </Box>

@@ -32,7 +32,7 @@ class ChatWebSocket {
                 console.log('파싱된 메시지:', message);
                 
                 // 필터링: silent 플래그가 있는 ENTER 메시지는 클라이언트에서 처리하지 않음
-                if (message.type === 'ENTER' && message.silent === true) {
+                if (message.type === 'ENTER' && message.isMember === true) {
                     console.log('Silent 입장 메시지 무시:', message);
                     return;
                 }
@@ -58,15 +58,15 @@ class ChatWebSocket {
         return () => this.closeHandlers.delete(handler);
     }
 
-    enterRoom(roomId, userId, silent = false) {
-        if(this.socket?.readyState === WebSocket.OPEN) {
+    enterRoom(roomId, userId, isMember) {
+        console.log(isMember);
+        if(this.socket?.readyState === WebSocket.OPEN && !isMember) {
             this.socket.send(JSON.stringify({
                 type: 'ENTER',
                 roomId: roomId,
                 senderId: userId,
                 message: '',
                 timestamp: new Date().toISOString(),
-                silent: silent // 이미 멤버인 경우 silent 플래그 설정
             }));
         }
     }
