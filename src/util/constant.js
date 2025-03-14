@@ -6,7 +6,7 @@ export const API = {
     AUTH: "/auth",
     TODOS: "/todos",
     COMMENTS: "/comments",
-    CHATS: "/chats"
+    CHATS: "/chat/rooms"
 };
 
 export const articlePath = API.BASE + API.ARTICLES;

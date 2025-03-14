@@ -1,4 +1,4 @@
-import { Box, Paper, Typography, Divider, Avatar, AvatarGroup, Tooltip, IconButton, Button } from "@mui/material";
+import { Box, Paper, Typography, Divider, Avatar, AvatarGroup, Tooltip, IconButton, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from "@mui/material";
 import PeopleIcon from '@mui/icons-material/People';
 import MessageInput from "./MessageInput";
 import { useEffect, useRef, useState } from "react";
@@ -9,8 +9,10 @@ import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import CloseIcon from '@mui/icons-material/Close';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import { chatPath, chattingPath } from "../../util/constant";
+import MemberSelection from "./MemberSelection";
+import { current } from "@reduxjs/toolkit";
 
-const ChatArea = ({currentChannel}) => {
+const ChatArea = ({currentChannel, setCurrentChannel, channels, setChannels}) => {
 // 스크롤을 위한 ref 추가
     const messagesEndRef = useRef(null);
     const [messages, setMessages] = useState([]);
@@ -21,6 +23,9 @@ const ChatArea = ({currentChannel}) => {
     const { userId } = useStore();
     const [webSocket, setWebSocket] = useState(null);
     const [isConnected, setIsConnected] = useState(false);
+    const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
+    const [previousMembers, setPreviousMembers] = useState([]);
+    const [isExitDialogOpen, setIsExitDialogOpen] = useState(false);
 
     // 메시지가 바뀔 때마다 스크롤을 아래로 이동
     useEffect(() => {
@@ -96,6 +101,11 @@ const ChatArea = ({currentChannel}) => {
 
     }, [token, currentChannel?.id, isMember, userId]);
 
+    // 채널 멤버 목록이 변경될 때마다 다시 불러오기
+    useEffect(() => {
+        fetchChannelMembers();
+    }, [members.length]); // 멤버 수가 변경될 때마다 실행
+
     // 채팅방이 변경되면 멤버십 확인 및 채팅방 입장
     useEffect(() => {
         if(!currentChannel?.id) {
@@ -139,13 +149,7 @@ const ChatArea = ({currentChannel}) => {
         if (!currentChannel?.id || !userId) return;
         try {
             // API 호출
-            console.log(chatPath + `/${currentChannel.id}`, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                }
-            });
-            const members = await api.get(`chats/${currentChannel.id}`).json();
+            const members = await api.get(`chat/rooms/${currentChannel.id}`).json();
             console.log("members :", members);
             const isCurrentUserMember = members.some(member => member.id === userId);
             setIsMember(isCurrentUserMember);
@@ -156,6 +160,13 @@ const ChatArea = ({currentChannel}) => {
         }
     };
 
+    const handleOpenExitDialog = () => {
+        setIsExitDialogOpen(true);
+    };
+    
+    const handleCloseExitDialog = () => {
+        setIsExitDialogOpen(false);
+    };
 
     // 수정된 enterRoom 함수
     const enterRoom = (roomId, userId) => {
@@ -173,16 +184,38 @@ const ChatArea = ({currentChannel}) => {
     };
 
     // 채널 멤버 목록을 가져오는 함수
-    const fetchChannelMembers = () => {
+    const fetchChannelMembers = async () => {
         if (!currentChannel?.id) return;
-        
-        getChannelMembers(currentChannel.id)
-        .then(membersList => {
+    
+        try {
+            const membersList = await getChannelMembers(currentChannel.id);
+    
+            // 새로 추가된 멤버 확인
+            if (previousMembers.length > 0) {
+                const newMembers = membersList.filter(member => 
+                    !previousMembers.some(prevMember => prevMember.id === member.id)
+                );
+    
+                if (newMembers.length > 0) {
+                    newMembers.forEach(newMember => {
+                        const systemMessage = {
+                            id: Date.now(),
+                            type: 'SYSTEM',
+                            content: `${newMember.name || newMember.username}님이 초대되었습니다.`,
+                            senderId: 'system',
+                            senderName: 'System',
+                            timestamp: new Date().toISOString()
+                        };
+                        setMessages(prev => [...prev, systemMessage]);
+                    });
+                }
+            }
+    
             setMembers(membersList);
-        })
-        .catch(error => {
+            setPreviousMembers(membersList);
+        } catch (error) {
             console.error("채널 멤버 로딩 실패 : ", error);
-        });
+        }
     };
 
     // MessageInput으로 전달할 메시지 전송 함수
@@ -206,6 +239,25 @@ const ChatArea = ({currentChannel}) => {
 
     const toggleMembersList = () => {
         setShowMembersList(!showMembersList);
+    };
+
+    const handleAddMember = () => {
+        setIsMemberModalOpen(true);
+    }
+
+    const handleConfirmExit = async () => {
+        try {
+            await api.delete(`chat/rooms/user?roomId=${currentChannel.id}&userId=${userId}`);
+    
+            setChannels(prevChannels => 
+                prevChannels.filter(channel => channel.id !== currentChannel.id)
+            );
+            setCurrentChannel(null);
+        } catch (error) {
+            console.error("채널 나가기 오류:", error);
+        } finally {
+            setIsExitDialogOpen(false);
+        }
     };
 
     return (
@@ -312,7 +364,7 @@ const ChatArea = ({currentChannel}) => {
                 <Box sx={{ display: 'flex', gap: 1 }}>
                     {/* Add Member Button */}
                     <Tooltip title="멤버 추가">
-                    <IconButton size="small" color="primary">
+                    <IconButton size="small" color="primary" onClick={handleAddMember}>
                         <PersonAddIcon fontSize="small" />
                     </IconButton>
                     </Tooltip>
@@ -379,17 +431,42 @@ const ChatArea = ({currentChannel}) => {
                 justifyContent: 'center'
             }}
             >
-            <Button 
-                variant="outlined" 
-                color="error" 
-                startIcon={<ExitToAppIcon />}
-                size="small"
-                fullWidth
-            >
-                채팅방 나가기
-            </Button>
+                <Button 
+                    variant="outlined" 
+                    color="error" 
+                    startIcon={<ExitToAppIcon />}
+                    size="small"
+                    fullWidth
+                    onClick={handleOpenExitDialog} // 클릭 시 모달 열림
+                >
+                    채팅방 나가기
+                </Button>
             </Box>
         </Box>
+        <MemberSelection 
+            open={isMemberModalOpen} 
+            onClose={() => setIsMemberModalOpen(false)} 
+            channelId={currentChannel?.id} 
+            currentMembers={members}
+            onMembersAdded={fetchChannelMembers} 
+        />
+
+        <Dialog
+            open={isExitDialogOpen}
+            onClose={handleCloseExitDialog}
+        >
+            <DialogTitle>채팅방 나가기</DialogTitle>
+            <DialogContent>
+                <DialogContentText>
+                    정말로 이 채팅방을 나가시겠습니까? <br />
+                    나가면 다시 초대받아야 참여할 수 있습니다.
+                </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={handleCloseExitDialog} color="primary">취소</Button>
+                <Button onClick={handleConfirmExit} color="error">나가기</Button>
+            </DialogActions>
+        </Dialog>
     </Box>
     )
 }
@@ -397,7 +474,6 @@ const ChatArea = ({currentChannel}) => {
 // 메세지 컴포넌트
 const MessageBubble = ({message, isMyMessage}) => {
     const isSystemMessage = message.type === 'ENTER' || message.type === 'LEAVE';
-
     const formattedDate = new Date(message.createAt).toLocaleString('ko-KR', {
         year: 'numeric',
         month: '2-digit',

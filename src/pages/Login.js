@@ -34,8 +34,6 @@ const Login = () => {
       const token = data.token;
       const userData = data.user;
 
-      console.dir(userData);
-
       localStorage.setItem("jwt", token);
       
       // zustand 상태에 사용자 정보 저장
