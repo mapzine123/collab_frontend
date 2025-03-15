@@ -23,6 +23,8 @@ export const sendMessage = async (messageData) => {
             }
         }).json();
 
+        console.log(response);
+
         return response;
     } catch(error) {
         console.error('메시지 전송 실패 :', error);

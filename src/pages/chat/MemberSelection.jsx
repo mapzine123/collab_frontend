@@ -40,7 +40,6 @@ const MemberSelection = ({ open, onClose, channelId, currentMembers, onMembersAd
                 users: selectedMembers,
                 roomId: channelId
             }
-            console.log(data);
 
             const response = await api.post(`chat/rooms/user`, {
                 json: data

@@ -49,12 +49,6 @@ const MessageInput = ({roomId, onSendMessage}) => {
                     gap: 1
                 }}
             >
-                <IconButton size="small">
-                    <AttachFile />
-                </IconButton>
-                <IconButton size="small">
-                    <EmojiEmotionsIcon />
-                </IconButton>
                 <TextField
                     fullWidth
                     variant="outlined"

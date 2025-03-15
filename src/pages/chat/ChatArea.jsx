@@ -70,7 +70,7 @@ const ChatArea = ({currentChannel, setCurrentChannel, channels, setChannels}) =>
                         content: message.content,
                         senderId: message.senderId,
                         senderName: message.senderName,
-                        timestamp: message.timestamp
+                        createAt: message.timestamp
                     };
 
                     // 사용자 입장/퇴장 메시지인 경우 멤버 목록 갱신
@@ -143,14 +143,12 @@ const ChatArea = ({currentChannel, setCurrentChannel, channels, setChannels}) =>
 
     // 채널 멤버십 확인 함수
     const checkMembership = async () => {
-        console.log(currentChannel.id);
         const token = localStorage.getItem('jwt'); 
 
         if (!currentChannel?.id || !userId) return;
         try {
             // API 호출
             const members = await api.get(`chat/rooms/${currentChannel.id}`).json();
-            console.log("members :", members);
             const isCurrentUserMember = members.some(member => member.id === userId);
             setIsMember(isCurrentUserMember);
             setMembers(members);
