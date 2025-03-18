@@ -1,5 +1,3 @@
-import SockJS from "sockjs-client";
-
 class ChatWebSocket {
     constructor(userId) {
         this.userId = userId;

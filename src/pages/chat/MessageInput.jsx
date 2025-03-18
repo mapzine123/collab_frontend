@@ -1,11 +1,7 @@
-import { AttachFile } from "@mui/icons-material";
 import { Box, IconButton, TextField } from "@mui/material";
 import { useState } from "react"
-import EmojiEmotionsIcon from '@mui/icons-material/EmojiEmotions';
 import SendIcon from '@mui/icons-material/Send';
 import {useSnackbar} from 'notistack';
-import { sendMessage } from "./chatApi";
-import { useStore } from "../../redux/store/store";
 
 const MessageInput = ({roomId, onSendMessage}) => {
     const [message, setMessage] = useState('');

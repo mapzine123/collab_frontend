@@ -1,5 +1,4 @@
 import ky from 'ky';
-import { useStore } from '../../redux/store/store';
 
 const token = localStorage.getItem('jwt'); 
 

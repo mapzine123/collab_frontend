@@ -7,15 +7,9 @@ export default function Menubar() {
   const navigate = useNavigate();
 
   const { userId, setUserId } = useStore();
-  const { authenticated, setAuthenticated } = useStore();
-  const { userImagePath, setUserImagePath } = useStore();
-
-
   
   const handleLogout = () => {
     setUserId(null);
-    setAuthenticated(false);
-    setUserImagePath(null);
     localStorage.removeItem("jwt");
     alert("로그아웃 되었습니다.");
     navigate("/");
@@ -50,7 +44,7 @@ export default function Menubar() {
               fontSize: '1.25rem'
             }}
           >
-            로고
+            Collab
           </Typography>
 
           {/* 중앙: 네비게이션 메뉴 */}

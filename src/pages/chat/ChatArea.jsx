@@ -154,7 +154,7 @@ const ChatArea = ({currentChannel, setCurrentChannel, channels, setChannels}) =>
             setMembers(members);
         } catch (error) {
             console.error("멤버십 확인 실패 : ", error);
-            // setIsMember(false);
+            setIsMember(false);
         }
     };
 

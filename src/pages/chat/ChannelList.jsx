@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { api } from "./chatApi";
 import { enqueueSnackbar } from "notistack";
 import UserSelectionDialog from "./UserSelectionDialog";
-import { getUserId } from "../../util/constant";
 
 
 const ChannelList = ({channels, setChannels, currentChannel, setCurrentChannel}) => {
