@@ -12,7 +12,7 @@ import ToDoList from "./pages/todoList/TodoList";
 import MyPage from "./pages/myPage/MyPage";
 import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
-import Main from "./pages/article/dashboard/Main";
+import Main from "./pages/dashboard/Main";
 
 const lightTheme = createTheme({
  palette: {
