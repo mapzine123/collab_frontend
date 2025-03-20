@@ -26,13 +26,13 @@ import rehypeRaw from 'rehype-raw';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { materialDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { useStore } from "../../redux/store/store";
-import { commentPath, modifyMode, userPath } from "../../util/constant";
+import { commentPath, modifyMode, userPath } from "../../utils/constant";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
-import { formatDate } from "../../util/dateUtil";
+import { formatDate } from "../../utils/dateUtil";
 import ThumbUpOutlinedIcon from '@mui/icons-material/ThumbUpOutlined';
 import ThumbDownOutlinedIcon from '@mui/icons-material/ThumbDownOutlined';
-import { articlePath } from "../../util/constant";
+import { articlePath } from "../../utils/constant";
 
 const ContentView = () => {
   const location = useLocation();

@@ -26,8 +26,8 @@ import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import SaveIcon from "@mui/icons-material/Save";
 import ky from "ky";
 import { useNavigate } from "react-router-dom";
-import { validatePassword } from "../../util/validator";
-import { userPath } from "../../util/constant";
+import { validatePassword } from "../../utils/validator";
+import { userPath } from "../../utils/constant";
 import { useStore } from "../../redux/store/store";
 import { uploadProfileImage } from "../../aws/s3Storage";
 

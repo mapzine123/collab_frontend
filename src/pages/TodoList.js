@@ -24,7 +24,7 @@ DialogContent,
 DialogActions
 } from '@mui/material';
 import { Add, CheckCircle, Delete, Edit, FilterList, CalendarMonth, Close, Event } from '@mui/icons-material';
-import { API, getApiUrl } from "../util/constant";
+import { API, getApiUrl } from "../utils/constant";
 import { api } from '../api/client';
 import { useStore } from '../redux/store/store';
 

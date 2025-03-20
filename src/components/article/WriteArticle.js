@@ -11,7 +11,7 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 import ky from "ky";
 import { useStore } from "../../redux/store/store";
-import { articlePath, modifyMode, writeMode } from "../../util/constant";
+import { articlePath, modifyMode, writeMode } from "../../utils/constant";
 import { uploadImage, deleteImage } from "../../aws/s3Storage"
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';

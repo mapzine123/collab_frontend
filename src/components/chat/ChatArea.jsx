@@ -8,7 +8,7 @@ import { useStore } from "../../redux/store/store";
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import CloseIcon from '@mui/icons-material/Close';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
-import { chatPath, chattingPath } from "../../util/constant";
+import { chatPath, chattingPath } from "../../utils/constant";
 import MemberSelection from "./MemberSelection";
 import { current } from "@reduxjs/toolkit";
 

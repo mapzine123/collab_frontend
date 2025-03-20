@@ -11,7 +11,7 @@ import {
 import { Search, Edit } from "@mui/icons-material";
 import ky from "ky";
 import { useStore } from "../redux/store/store";
-import { articlePath, writeMode } from "../util/constant";
+import { articlePath, writeMode } from "../utils/constant";
 import ArticleList from "../components/article/ArticleList";
 
 const Main = () => {

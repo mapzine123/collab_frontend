@@ -16,9 +16,9 @@ import ThumbDownOutlinedIcon from '@mui/icons-material/ThumbDownOutlined';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import ky from "ky";
-import { articlePath, modifyMode, userPath } from "../../util/constant";
+import { articlePath, modifyMode, userPath } from "../../utils/constant";
 import { useNavigate } from "react-router-dom";
-import { formatDate } from "../../util/dateUtil";
+import { formatDate } from "../../utils/dateUtil";
 
 const ArticleList = ({ posts, setPosts }) => {
   const { userId } = useStore();
