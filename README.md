@@ -70,8 +70,8 @@ Collab은 사내 협업을 위한 웹 애플리케이션으로, 팀원들이 원
   └─📜 App.jsx
 ```
 ## 8. ERD (Entity Relationship Diagram)
-![이미지 설명](assets/images/erd.png)
+![이미지 설명](src/assets/images/erd.png)
 
 
 ## 9. API 명세서
-![이미지 설명](assets/images/api.png)
+![이미지 설명](src/assets/images/api.png)
