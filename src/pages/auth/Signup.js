@@ -3,8 +3,8 @@ import { Box, Button, Container, FormControl, InputLabel, MenuItem, Paper, Selec
 import ky from "ky";
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { API, getApiUrl } from "../util/constant";
-import { validatePassword } from "../util/validator";
+import { API, getApiUrl } from "../../util/constant";
+import { validatePassword } from "../../util/validator";
 
 const Signup = () => {
   const [idErrorMessage, setIdErrorMessage] = useState("");

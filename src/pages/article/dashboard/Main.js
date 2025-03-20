@@ -11,9 +11,9 @@ import {
 } from "@mui/material";
 import { Search, Edit } from "@mui/icons-material";
 import ky from "ky";
-import { useStore } from "../redux/store/store";
-import { articlePath, writeMode } from "../util/constant";
-import ArticleList from "./article/ArticleList";
+import { useStore } from "../../../redux/store/store";
+import { articlePath, writeMode } from "../../../util/constant";
+import ArticleList from "../ArticleList";
 
 const Main = () => {
   const [currentPage, setCurrentPage] = useState(1);

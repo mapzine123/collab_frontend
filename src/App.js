@@ -1,8 +1,6 @@
 import "./App.css";
-import Main from "./pages/Main";
-import Login from "./pages/Login";
+
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-import Signup from "./pages/Signup";
 import Menubar from "./components/Menubar";
 import { createTheme, CssBaseline, Snackbar, ThemeProvider } from "@mui/material";
 import { usePersistedStore, useStore } from "./redux/store/store";
@@ -12,6 +10,9 @@ import ContentView from "./pages/article/ContentView";
 import ChatMain from "./pages/chat/ChatMain";
 import ToDoList from "./pages/todoList/TodoList";
 import MyPage from "./pages/myPage/MyPage";
+import Login from "./pages/auth/Login";
+import Signup from "./pages/auth/Signup";
+import Main from "./pages/article/dashboard/Main";
 
 const lightTheme = createTheme({
  palette: {

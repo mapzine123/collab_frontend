@@ -3,8 +3,8 @@ import { Container, Typography, TextField, Button, Box, Paper } from "@mui/mater
 import { LoginOutlined } from '@mui/icons-material';
 import { useNavigate, Link } from "react-router-dom";
 import ky from "ky";
-import { useStore } from "../redux/store/store";
-import { authPath } from "../util/constant";
+import { useStore } from "../../redux/store/store";
+import { authPath } from "../../util/constant";
 
 const Login = () => {
   const [id, setId] = useState("");
