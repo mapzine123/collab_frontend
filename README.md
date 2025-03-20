@@ -71,6 +71,7 @@ Collab은 사내 협업을 위한 웹 애플리케이션으로, 팀원들이 원
 - MySQL 9.0.1
 
 ## 7. 프로젝트 구조
+- FE
 ```
 └─📦 src
   ├─📂 api                # API 통신 관련 파일들
@@ -87,6 +88,20 @@ Collab은 사내 협업을 위한 웹 애플리케이션으로, 팀원들이 원
   ├─📂 utils              # 유틸리티 함수
   └─📜 App.jsx            # 애플리케이션 진입점 (루트 컴포넌트)
 
+```
+- BE
+```
+└─📦 collab
+  ├─📂 chatting
+  ├─📂 config
+  ├─📂 controller
+  ├─📂 dto
+  ├─📂 entity
+  ├─📂 exception
+  ├─📂 repository
+  ├─📂 service
+  ├─📂 vo
+  └─📂 websocket
 ```
 ## 8. ERD (Entity Relationship Diagram)
 ![ERD](src/assets/images/ERD.png)
