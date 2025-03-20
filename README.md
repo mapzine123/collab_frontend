@@ -8,7 +8,7 @@ Collab은 사내 협업을 위한 웹 애플리케이션으로, 팀원들이 원
 
 ## 3. 서비스 소개
 - **게시판**: 코드 및 이미지 첨부 가능, 댓글 및 대댓글 기능 지원.
-- **업무 리스트 (Todo List)**: 필터 기능 적용, 부서별, 기한별, 상태별 등 업무 진행 상황을 관리할 수 있음.
+- **업무 리스트 (Todo List)**: 필터 기능 적용, 부서별, 기한별, 상태별 등 업무 진행 여부를 관리할 수 있음.
 - **실시간 채팅**: WebSocket을 이용한 실시간 채팅 기능으로 빠른 의사결정과 협업 지원.
 
 ## 4. 서비스 대상
@@ -18,20 +18,38 @@ Collab은 사내 협업을 위한 웹 애플리케이션으로, 팀원들이 원
 
 ## 5. 서비스 화면 및 기능 소개
 ### 1) 프로필 사진 변경
-사용자 프로필 사진을 변경할 수 있는 기능 제공.
+- 사용자 프로필 사진을 변경할 수 있는 기능
+    - AWS S3를 이용하여 이미지 파일 저장
+- 본인이 작성한 게시글 모아보기 기능
+![마이페이지 이미지](src/assets/images/myPage1.png)
+![마이페이지 이미지](src/assets/images/myPage2.png)
+
 
 ### 2) 게시판
 - 코드 및 이미지 첨부 가능
 - 좋아요/싫어요 기능
 - 댓글 및 대댓글 지원
+![게시글이미지1](src/assets/images/article1.png)
+![게시글이미지2](src/assets/images/article2.png)
+![게시글이미지3](src/assets/images/article3.png)
+![게시글이미지3](src/assets/images/article4.png)
 
 ### 3) 업무 리스트 (Todo List)
 - 다양한 필터 적용 가능 (부서별, 기한별, 상태별 등)
-- 업무 세부사항 확인 및 관리 기능 제공
+![업무리스트 이미지](src/assets/images/todo1.png)
+![업무리스트 이미지](src/assets/images/todo2.png)
+
 
 ### 4) 실시간 채팅
+- 부서별 필터링 된 인원 추가
 - WebSocket을 이용한 실시간 채팅 기능
 - 빠른 의사결정 및 협업 지원
+![채팅기능 이미지](src/assets/images/chatting1.png)
+![채팅기능 이미지](src/assets/images/chatting2.png)
+![채팅기능 이미지](src/assets/images/chatting3.png)
+![채팅기능 이미지](src/assets/images/chatting4.png)
+![채팅기능 이미지](src/assets/images/chatting5.png)
+
 
 ## 6. 사용된 기술 스택
 
@@ -71,8 +89,8 @@ Collab은 사내 협업을 위한 웹 애플리케이션으로, 팀원들이 원
 
 ```
 ## 8. ERD (Entity Relationship Diagram)
-![이미지 설명](src/assets/images/ERD.png)
+![ERD](src/assets/images/ERD.png)
 
 
 ## 9. API 명세서
-![이미지 설명](src/assets/images/api.png)
+![API 명세서](src/assets/images/api.png)
