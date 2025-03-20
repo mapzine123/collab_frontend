@@ -1,11 +1,7 @@
-import { AttachFile } from "@mui/icons-material";
 import { Box, IconButton, TextField } from "@mui/material";
 import { useState } from "react"
-import EmojiEmotionsIcon from '@mui/icons-material/EmojiEmotions';
 import SendIcon from '@mui/icons-material/Send';
 import {useSnackbar} from 'notistack';
-import { sendMessage } from "./chatApi";
-import { useStore } from "../../redux/store/store";
 
 const MessageInput = ({roomId, onSendMessage}) => {
     const [message, setMessage] = useState('');
@@ -14,8 +10,6 @@ const MessageInput = ({roomId, onSendMessage}) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-
-        console.log('보낸 메시지 : ', message);
         if(!message.trim() || !roomId) {
             return;
         }
@@ -51,12 +45,6 @@ const MessageInput = ({roomId, onSendMessage}) => {
                     gap: 1
                 }}
             >
-                <IconButton size="small">
-                    <AttachFile />
-                </IconButton>
-                <IconButton size="small">
-                    <EmojiEmotionsIcon />
-                </IconButton>
                 <TextField
                     fullWidth
                     variant="outlined"

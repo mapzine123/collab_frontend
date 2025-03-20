@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { api } from "./chatApi";
 import { enqueueSnackbar } from "notistack";
 import UserSelectionDialog from "./UserSelectionDialog";
-import { getUserId } from "../../util/constant";
 
 
 const ChannelList = ({channels, setChannels, currentChannel, setCurrentChannel}) => {
@@ -61,8 +60,8 @@ const ChannelList = ({channels, setChannels, currentChannel, setCurrentChannel})
             try {
                 const response = await api.post('chat/rooms', {
                     json: {
-                        name: newChannelName.trim(),
-                        userIds: selectedUsers.map(user => user.id)
+                        chatRoomName: newChannelName.trim(),
+                        users: selectedUsers.map(user => user.id)
                     }, 
                     headers: {
                         Authorization: `Bearer ${token}`,
