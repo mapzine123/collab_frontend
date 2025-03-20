@@ -24,9 +24,9 @@ DialogContent,
 DialogActions
 } from '@mui/material';
 import { Add, CheckCircle, Delete, Edit, FilterList, CalendarMonth, Close, Event } from '@mui/icons-material';
-import { API, getApiUrl } from "../../util/constant";
-import { api } from '../../api/client';
-import { useStore } from '../../redux/store/store';
+import { API, getApiUrl } from "../util/constant";
+import { api } from '../api/client';
+import { useStore } from '../redux/store/store';
 
 // 날짜를 YYYY-MM-DD 형식으로 변환
 const formatDateForInput = (date) => {

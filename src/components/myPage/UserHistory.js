@@ -7,9 +7,7 @@ import {
   Chip,
   CircularProgress,
   Alert,
-  Grid,
   Paper,
-  Card,
   useTheme,
   useMediaQuery,
   Button,
@@ -23,9 +21,8 @@ import {
 } from "@mui/material";
 import ky from "ky";
 import SortIcon from "@mui/icons-material/Sort";
-import FilterListIcon from "@mui/icons-material/FilterList";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
-import ArticleList from "../article/ArticleList";
+import ArticleList from "../../components/article/ArticleList";
 import { articlePath } from "../../util/constant";
 import { useStore } from "../../redux/store/store";
 

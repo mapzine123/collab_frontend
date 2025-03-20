@@ -19,8 +19,8 @@ import PersonIcon from "@mui/icons-material/Person";
 import HistoryIcon from "@mui/icons-material/History";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
-import UserInfo from "./UserInfo";
-import UserHistory from "./UserHistory";
+import UserInfo from "../components/myPage/UserInfo";
+import UserHistory from "../components/myPage/UserHistory";
 
 const MyPage = () => {
   const INFO = "info";

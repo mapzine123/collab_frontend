@@ -5,14 +5,14 @@ import Menubar from "./components/Menubar";
 import { createTheme, CssBaseline, Snackbar, ThemeProvider } from "@mui/material";
 import { usePersistedStore, useStore } from "./redux/store/store";
 import { SnackbarProvider } from "notistack";
-import WriteArticle from "./pages/article/WriteArticle";
-import ContentView from "./pages/article/ContentView";
-import ChatMain from "./pages/chat/ChatMain";
-import ToDoList from "./pages/todoList/TodoList";
-import MyPage from "./pages/myPage/MyPage";
-import Login from "./pages/auth/Login";
-import Signup from "./pages/auth/Signup";
-import Main from "./pages/dashboard/Main";
+import WriteArticle from "./components/article/WriteArticle";
+import ContentView from "./components/article/ContentView";
+import ChatMain from "./pages/ChatMain";
+import ToDoList from "./pages/TodoList";
+import MyPage from "./pages/MyPage";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import Main from "./pages/Main";
 
 const lightTheme = createTheme({
  palette: {
